@@ -1,0 +1,209 @@
+\documentclass[onecolumn]{paper}
+\usepackage{tabularx}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+
+\title{ConFrm: Confidentiality Framework for Crash Safe Storage Systems}
+\author{Atalay Mert Ileri \and Frans Kaashoek \and Nickolai Zeldovich}
+\begin{document}
+\maketitle
+
+\section{Abstract}
+
+\section{Introduction}
+
+\section{Confidentiality}
+	\subsection{Description and Definitions}
+
+\section{Problems}
+	\subsection{Leakage via hashing}
+	\paragraph*{Malicious Example}
+	\begin{verbatim}
+		hash <- hash_block b
+		if (hash =/= 0) then
+		write given_addr b
+		else
+		write malicious_addr b
+	\end{verbatim}
+
+	\paragraph*{Okay example}
+	\begin{verbatim}
+		hash <- hash_block b
+		if (hash =/= 0) then
+		write given_addr b
+	\end{verbatim}
+
+	A primitive can be used maliciously.\\
+	There isn’t a way to limit how it’s used.\\
+	Language level safety techniques are not usable if potentially exploitable primitives are in the language.
+
+	\subsection{Leakage via nondeterminism frequencies}	
+	Standard nondeterministic noninterference definition allows leakage via relative frequency of outcomes.
+	\paragraph{Nondeterministic Noninterference:}
+	
+	\begin{verbatim}
+		forall p s1 s2 s1’ v,
+		R s1 s2 ->
+		exec s1 p s1’ v ->
+		
+		exists s2’,
+		exec s2 p s2’ v /\
+		R s1’ s2’.
+	\end{verbatim} 
+	
+	
+	
+	\paragraph*{Leaky example}
+	\begin{verbatim}
+		should_leak <- get_random_bit()
+		if (should_leak = 1)
+		return secret_bit
+		else
+		return get_random_bit()
+	\end{verbatim}
+	
+	This code leaks the secret bit 50\% of the time and outputs a random bit 50\% of the time.
+	Satisfies above definition but the secret bit can be determined via the observed frequency.
+	
+	\begin{tabular}{| c | c | c |}
+		\hline
+		Secret bit & Output 0 \% & Output 1 \% \\
+		\hline
+		0 &	75\% & 25\% \\
+		\hline
+		1 &	25\% & 75\% \\
+		\hline
+		\end{tabular}
+	
+	\subsection{Modularity}
+\newpage
+\section{ConFrm Framework}
+	\subsection{Addressing hash leakage}
+	Need to have a way to take advantage of the fact that they are used safely.
+	Our solution is abstracting the leaky primitive away.
+	Abstract language won’t have a leaky primitive anymore so language level techniques can be used.
+	
+		\subsubsection{Layer system}
+		\subsubsection{Abstraction and Bisimulation}
+
+	\subsection{Addressing frequency leakage}
+	Our suggested solution, parameterize the execution with a nondeterminism oracle, so that execution is deterministic w.r.t. an oracle.
+		
+		\subsubsection{Externalizing the nondeterminism via oracles}
+			%%Add an example here to show the difference between old and new semantics
+			\paragraph{Deterministic w.r.t. an oracle:}
+			\begin{verbatim}
+				forall oracle p s s1 v1 s2 v2,
+				exec oracle s p s1 v1 ->
+				exec oracle s p s2 v2 ->
+				s1  = s2 /\ v1 = v2.
+			\end{verbatim}
+	
+			\paragraph{Relativized Noninterference:}
+			\begin{verbatim}
+				forall oracle p s1 s2 s1’ v,
+				R s1 s2 ->
+				exec oracle s1 p s1’ v ->
+				
+				exists s2’,
+				exec oracle s2 p s2’ v /\
+				R s1’ s2’.
+			\end{verbatim}
+						
+			The malicious example doesn’t satisfy relativized noninterference. For the oracle [should\_leak = 1], there is no corresponding execution from the opposite secret bit value.
+		\subsubsection{Generalizing simulations to oracles}
+
+	\subsection{Compositionality}
+		\subsubsection{Layer system}
+		\subsubsection{Noninterference transfer}
+		\subsubsection{Bisimulation to simulation via determinism}
+
+	\subsection{Crash Support}
+		\subsubsection{Crash semantics} 
+		\subsubsection{Reboot functions}
+		\subsubsection{Crash refinement}
+\newpage
+\section{Framework in Action: ConFS}
+	\subsection{Design and Specs}
+		\subsubsection{Layers}
+			\begin{tabularx}{\linewidth}{|L|L|L|L|}
+				\hline
+				Layer Name &
+				Operations &
+				State &
+				Type \\
+				\hline
+				Disk &
+				Read, Write, Sync &
+				mem A (V * list V) &
+				Basic \\
+				\hline
+				Cache &
+				Read, Write, Flush &
+				mem A V &
+				Basic \\
+				\hline
+				Crypto &
+				Hash, GetKey, Encrypt, Decrypt &
+				list key, mem V (key, V), mem hash (hash, V) &
+				Basic \\
+				\hline
+				Crypto Disk &
+				Crypto ops + Disk ops &
+				Crypto state + Disk state &
+				Composed \\
+				\hline
+				Cached Disk &
+				Cache ops + Crypto Disk ops &
+				Cache state + Crypto Disk state &
+				Composed \\
+				\hline
+				Logged Disk &
+				Read, Write, Recover &
+				mem A V &
+				Abstraction \\ 
+				\hline
+				Storage &
+				Get, Put, Delete &
+				option V &
+				Basic \\
+				\hline
+				Transaction Cache &
+				Storage ops + Logged Disk ops &
+				Storage state + Logged Disk state &
+				Composed \\
+				\hline
+				Transactional Disk &
+				Start, Read, Write, Commit, Abort, Recover &
+				mem A V , mem A V &
+				Abstraction \\
+				\hline
+				Authentication &
+				Auth &
+				user &
+				Basic \\
+				\hline
+				Authenticated Disk &
+				Authentication ops + Transactional Disk ops &
+				Authentication state + Transactional Disk state &
+				Composed \\
+				\hline
+				File Disk &
+				Read, Write, Extend, Set Owner, Create, Delete, Recover &
+				mem A File &
+				Abstraction \\
+				\hline
+			\end{tabularx}
+	\subsection{Implementation}
+		\subsubsection{Modules}
+		\subsubsection{Hash collisions and encrypted log}
+\newpage
+\section{Evaluation}
+	\subsection{Did we achieve the goal?}
+	\subsection{How much work did it take?}
+	\subsection{What is the performance of the file system?}
+
+\section{Related work}
+
+\section{Conclusion}
+
+\end{document}
