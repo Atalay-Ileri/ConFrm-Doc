@@ -11,11 +11,24 @@
 
 \section{Introduction}
 
+\section{Related Work}
+
+\section {Definitions}
+
 \section{Confidentiality}
 	\subsection{Description and Definitions}
 
 \section{Problems}
-	\subsection{Leakage via hashing}
+        \subsection{Leakage via hashing}
+
+%{\color{red}
+% Motivate this problem.
+% Maybe refer to DiskSec couldn't do it.
+% Protection from adverserial implementation.
+% Important point of view.
+% Make security similar to FC.
+%}
+
 	\paragraph*{Malicious Example}
 	\begin{verbatim}
 		hash <- hash_block b
@@ -75,7 +88,8 @@
 		\end{tabular}
 	
 	\subsection{Modularity}
-\newpage
+        \newpage
+
 \section{ConFrm Framework}
 	\subsection{Addressing hash leakage}
 	Need to have a way to take advantage of the fact that they are used safely.
@@ -115,7 +129,7 @@
 	\subsection{Compositionality}
 		\subsubsection{Layer system}
 		\subsubsection{Noninterference transfer}
-		\subsubsection{Bisimulation to simulation via determinism}
+		\subsubsection{Bisimulation to Simulation via Determinism}
 
 	\subsection{Crash Support}
 		\subsubsection{Crash semantics} 
@@ -198,11 +212,10 @@
 		\subsubsection{Hash collisions and encrypted log}
 \newpage
 \section{Evaluation}
+        \subsection{Are specs reasonable?}
 	\subsection{Did we achieve the goal?}
 	\subsection{How much work did it take?}
 	\subsection{What is the performance of the file system?}
-
-\section{Related work}
 
 \section{Conclusion}
 

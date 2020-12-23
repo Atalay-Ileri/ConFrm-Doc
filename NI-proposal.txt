@@ -1,0 +1,147 @@
+Informal Noninterference Definition
+
+Our definition should cover both leaking from othrs to current user and from current user to ours. So two components are
+1)FS doesn't leak from current user's files to others' files.
+2)FS doesn't leak from others' files to current user's files.
+
+(1) can be established with:
+- Start with two states where others' files are the same but current user's files are different.
+- Run same syscall with same parameters on both 
+	(also two Write syscalls with different block contents 
+	e.g. "Write inum offset block1" vs. "Write inum offset block2")
+- Others' files are the same after syscall finishes (or crashes and recovers).
+
+(2) can be established with:
+- Start with two states where others' files are different but current user's files are the same.
+- Run same syscall with same parameters on both
+- Current user's files and syscall return values are the same after syscall finishes (or crashes and recovers).
+
+For change_owner, our NI statement (1) will exclude the file that is being operated on. 
+Absence of leakage into the operated file will be covered by functional correctness of change_owner.
+(i.e. It will state that contents of the file is the same before and after change_owner)
+
+
+Equivalence Relation
+
+To cover all of the above, our equivalence relation between two file disks will be parameterized by a user and an option inum.
+It will informally state that:
+
+For a user u, a potentially excluded file ex, two file disks d1 and d2, 
+d1 and d2 are equivalent if
+
+1) d1 and d2 have same file handles (i.e. used inums are the same), and
+
+2) For any non-excluded file in d1, corresponding file in d2 have the same owner and the same length.
+
+ for any handle inum, 
+	if inum =/= ex, 
+	then 
+		d1[inum].owner = d2[inum].owner and
+		length (d1[inum].blocks) = length (d2[inum].blocks)
+	
+3)  Any non-excluded file that is owned by u is the same in both disks.  
+
+	for any handle inum, 
+		if inum =/= ex and d1[inum].owner = u
+		then 
+			d1[inum] = d2[inum]
+
+
+Semi-Formal Noninterference Definitions
+
+For all non change_owner syscalls
+1)
+forall d1 d2 u u' syscall d1' v1,
+	u <> u' ->
+	eqv u' None d1 d2 ->
+	exec u d1 syscall (d1', v1) ->
+	exists d2' v2,
+	exec u d2 syscall (d2', v2) /\
+	eqv u' None d1' d2'.
+	
+Write special case:
+forall d1 d2 u u' inum off b1 b2 d1' v1,
+	u <> u' ->
+	eqv u' None d1 d2 ->
+	exec u d1 (Write inum off b1) (d1', v1) ->
+	exists d2' v2,
+	exec u d2 (Write inum off b2) (d2', v2) /\
+	eqv u' None d1' d2'.
+	
+2) 
+forall d1 d2 u syscall d1' v1,
+	eqv u None d1 d2 ->
+	exec u d1 syscall (d1', v1) ->
+	exists d2' v2,
+	exec u d2 syscall (d2', v2) /\
+	eqv u None d1' d2' /\
+	v1 = v2.
+	
+For change_owner:
+1)
+forall d1 d2 u u' inum new_owner d1' v1,
+	u <> u' ->
+	eqv u' (Some inum) d1 d2 ->
+	exec u d1 (change_owner inum new_owner) (d1', v1) ->
+	exists d2' v2,
+	exec u d2 (change_owner inum new_owner) (d2', v2) /\
+	eqv u' (Some inum) d1' d2'.
+	
+Functional Correctness:
+forall d1 u inum new_owner d1',
+	exec u d1 (change_owner inum new_owner) (d1', Some tt) ->
+	d1'[inum] = {| owner:= new_owner; blocks:=d1[inum].blocks |}.
+	
+	
+	
+Merging into a single statement:
+Since (1) and (2) are very similar, we can merge both of them into a single definition that captures the both:
+
+Merged definition:
+forall d1 d2 u u' syscall d1' v1,
+	eqv u' None d1 d2 ->
+	exec u d1 syscall (d1', v1) ->
+	exists d2' v2,
+	exec u d2 syscall (d2', v2) /\
+	eqv u' None d1' d2' /\
+	(u = u' -> v1 = v2).
+	
+
+TLDR:
+We need to prove following 3 NI statements and one FC statement:
+
+For all syscalls except change_owner,
+
+forall d1 d2 u u' syscall d1' v1,
+	eqv u' None d1 d2 ->
+	exec u d1 syscall (d1', v1) ->
+	exists d2' v2,
+	exec u d2 syscall (d2', v2) /\
+	eqv u' None d1' d2' /\
+	(u = u' -> v1 = v2).
+	
+For Write special case:
+
+forall d1 d2 u u' inum off b1 b2 d1' v1,
+	u <> u' ->
+	eqv u' None d1 d2 ->
+	exec u d1 (Write inum off b1) (d1', v1) ->
+	exists d2' v2,
+	exec u d2 (Write inum off b2) (d2', v2) /\
+	eqv u' None d1' d2'.
+	
+For change_owner:
+
+forall d1 d2 u u' inum new_owner d1' v1,
+	eqv u' (Some inum) d1 d2 ->
+	exec u d1 (change_owner inum new_owner) (d1', v1) ->
+	exists d2' v2,
+	exec u d2 (change_owner inum new_owner) (d2', v2) /\
+	eqv u' (Some inum) d1' d2'.
+	
+Functional Correctness:
+forall d1 u inum new_owner d1',
+	exec u d1 (change_owner inum new_owner) (d1', Some tt) ->
+	d1'[inum] = {| owner:= new_owner; blocks:=d1[inum].blocks |}.
+	
+
