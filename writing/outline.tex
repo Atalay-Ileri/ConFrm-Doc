@@ -33,16 +33,16 @@
 	\begin{verbatim}
 		hash <- hash_block b
 		if (hash =/= 0) then
-		write given_addr b
+			write given_addr b
 		else
-		write malicious_addr b
+			write malicious_addr b
 	\end{verbatim}
 
 	\paragraph*{Okay example}
 	\begin{verbatim}
 		hash <- hash_block b
 		if (hash =/= 0) then
-		write given_addr b
+			write given_addr b
 	\end{verbatim}
 
 	A primitive can be used maliciously.\\
@@ -69,9 +69,9 @@
 	\begin{verbatim}
 		should_leak <- get_random_bit()
 		if (should_leak = 1)
-		return secret_bit
+			return secret_bit
 		else
-		return get_random_bit()
+			return get_random_bit()
 	\end{verbatim}
 	
 	This code leaks the secret bit 50\% of the time and outputs a random bit 50\% of the time.
@@ -124,6 +124,243 @@
 			\end{verbatim}
 						
 			The malicious example doesn’t satisfy relativized noninterference. For the oracle [should\_leak = 1], there is no corresponding execution from the opposite secret bit value.
+			
+			\subsubsection{Data Noninterference}
+			
+			Our definition should cover both leaking from others to current user and from current user to ours. So two components are\\
+			
+			1)FS doesn't leak from current user's files to others' files.
+			
+			2)FS doesn't leak from others' files to current user's files.\\
+			
+			
+			(1) can be established with:
+			
+			- Start with two states where others' files are the same but current user's files are different.
+			
+			- Run same syscall with same parameters on both.\\ 
+			(also two Write/Extend syscalls with different block contents 
+			e.g. "Write inum offset block1" vs. "Write inum offset block2")
+			
+			- Others' files are the same after syscall finishes (or crashes and recovers).\\
+			
+			(2) can be established with:
+			
+			- Start with two states where others' files are different but current user's files are the same.
+			
+			- Run same syscall with same parameters on both
+			
+			- Current user's files and syscall return values are the same after syscall finishes (or crashes and recovers).\\
+			
+			For change\_owner, our NI statement (1) will exclude the file that is being operated on. 
+			Absence of leakage into the operated file will be covered by functional correctness of change\_owner.
+			(i.e. It will state that contents of the file is the same before and after change\_owner)\\
+			
+			
+			{\bf Equivalence Relation}
+			
+			To cover all of the above, our equivalence relation between two file disks will be parameterized by a user and an option inum.
+			It will informally state that:\\
+			
+			For a user u, a potentially excluded file ex, two file disks d1 and d2, 
+			d1 and d2 are equivalent if
+			
+			1) d1 and d2 have same file handles (i.e. used inums are the same), and\\
+			
+			$\forall\ inum,\ d1[inum] \ne None \leftrightarrow d2[inum] \ne None$\\
+			
+			
+			2) For any file in d1, corresponding file in d2 have the same owner and the same length. More formally:\\
+			
+			$\forall\ handle\ inum,$
+			
+			$d1[inum].owner = d2[inum].owner\ \wedge$
+			 
+			$length (d1[inum].blocks) = length (d2[inum].blocks)$\\
+			
+			3)  Any non-excluded file that is owned by u is the same in both disks. \\ 
+			
+			$\forall\ handle\ inum,$
+			 
+			$inum \ne ex \rightarrow$
+			
+			$d1[inum].owner = u \rightarrow$
+			
+			$d1[inum] = d2[inum]$\\
+			
+			
+			{\bf Semi-Formal Noninterference Definitions}
+			
+			{\bf Case 1}\\
+			
+			{\bf Non-change\_owner syscalls}
+
+			$\forall\ d_1\ d_2\ u\ u'\ syscall\ d_1'\ v_1,$
+			
+			$u \ne u' \rightarrow$
+			
+			$eqv\ u'\ None\ d_1\ d_2 \rightarrow$
+			
+			$exec\ u\ d_1\ syscall\ (d_1', v_1) \rightarrow$
+			
+			$\exists\ d_2'\ v_2,$
+			
+			$exec\ u\ d_2\ syscall\ (d_2', v_2)\ \wedge$
+			
+			$eqv\ u'\ None\ d_1'\ d_2'$\\
+			
+			
+			{\bf change\_owner special case}
+			
+			$\forall\ d_1\ d_2\ u\ u'\ inum\ new\_owner\ d_1'\ v_1,$
+			
+			$eqv\ u'\ (Some\ inum)\ d_1\ d_2 \rightarrow$
+			
+			$exec\ u\ d_1\ (change\_owner\ inum\ new\_owner)\ (d_1', v_1) \rightarrow$
+			
+			$\exists\ d_2'\ v_2,$
+			
+			$exec\ u\ d_2\ (change\_owner\ inum\ new\_owner)\ (d_2', v_2)\ \wedge$
+			
+			$eqv\ u'\ (Some\ inum)\ d_1'\ d_2'$\\
+			
+			
+			{\bf Write/Extend special case}
+			
+			$\forall\ d_1\ d_2\ u\ u'\ inum\ off\ b_1\ b_2\ d_1'\ v_1,$
+			
+			$eqv\ u'\ (Some\ inum)\ d_1\ d_2 \rightarrow$
+			
+			$exec\ u\ d_1\ (Write\ inum\ off\ b_1)\ (d_1', v_1) \rightarrow$
+			
+			$\exists\ d_2'\ v_2,$
+			
+			$exec\ u\ d_2\ (Write\ inum\ off\ b_2)\ (d_2', v_2)\ \wedge$
+			
+			$eqv\ u'\ (Some\ inum)\ d_1'\ d_2'$\\
+			
+			{\bf Case 2}
+			 
+			 $\forall\ d_1\ d_2\ u\ syscall\ d_1'\ v_1,$
+			 
+			 $eqv\ u\ None\ d_1\ d_2 \rightarrow$
+			 
+			 $exec\ u\ d_1\ syscall\ (d_1', v_1) \rightarrow$
+			 
+			 $\exists\ d_2'\ v_2,$
+			 
+			 $exec\ u\ d_2\ syscall\ (d_2', v_2)\ \wedge$
+			 
+			 $eqv\ u\ None\ d_1'\ d_2'\ \wedge$
+			 
+			 $v_1 = v_2$\\
+			
+			
+			{\bf Functional correctness for change\_owner}\\
+			forall d1 u inum new\_owner d1',
+			exec u d1 (change\_owner inum new\_owner) (d1', Some tt) ->
+			d1'[inum] = {| owner:= new\_owner; blocks:=d1[inum].blocks |}.\\
+			
+			
+			
+			{\bf Merging into a single NI statement}
+			Since (1) and (2) are very similar, we can merge both of them into a single definition that captures both:\\
+			
+			$\forall\ d_1\ d_2\ u\ u'\ syscall\ d_1'\ v_1,$
+			
+			$eqv\ u'\ None\ d_1\ d_2 \rightarrow$
+			
+			$exec\ u\ d_1\ syscall\ (d_1', v_1) \rightarrow$
+			
+			$\exists\ d_2'\ v_2,$
+			
+			$exec\ u\ d_2\ syscall\ (d_2', v_2)\ \wedge$
+			
+			$eqv\ u'\ None\ d_1'\ d_2'\ \wedge$
+			
+			$(u = u' \rightarrow v_1 = v_2)$\\
+			
+			{\bf Why do we need special change\_owner definition?}
+			In general definition, if u' = new\_owner, contents of the file we are operating on may not be identical in equivalent states. 
+			Because of this, resulting states may not be equivalent for the new owner. 
+			This fact requires us to use a sligthly weaker variant of the equivalence for change\_owner.
+			
+			Weaker variant does not state anything about the contents of the operated file.
+			Proof of contents not changing comes from the functional correctness.\\
+			
+			
+			{\bf Why do we need special Write/Extend definitions?}\\
+			Here is an implementation of extend syscall that satisfies the generic definition but leaks the data in a future call.
+			
+			\begin{verbatim}
+				extend (inum, block){
+					append_to_file(stash_file, block)
+					append_to_file(inum, block)
+				}
+			\end{verbatim}
+			
+			
+			if two states were equivalent before, they will be still equivalent after if  you extend with the same block. Coupled with an adversarial Read implementation, this can cause leakage of private data although satisfying the generic definition.
+			
+			However, this implementation will not satisfy the special case theorem because different values will break equivalence between stash files.\\
+			
+			{\bf What if an implementation uses a hidden underlying layer primitive (like a stash block that is not part of any file) to stash data?}\\
+			
+			In that case, two implementation states that differ only in stash block will refine to the same abstract state (which is equivalent to itself for every user). 
+			
+			If that is the case, then a read implementation that would return stash\_block's content would return two different values from the same state. This would prevent both NI and Simulation obligations to be proven correct.\\
+			
+			{\bf TLDR}\\
+			We need to prove following 3 NI statements and one FC statement:
+			
+			For all syscalls except change\_owner,
+			
+			forall d1 d2 u u' syscall d1' v1,
+			eqv u' None d1 d2 ->
+			exec u d1 syscall (d1', v1) ->
+			exists d2' v2,
+			exec u d2 syscall (d2', v2) /\
+			eqv u' None d1' d2' /\
+			(u = u' -> v1 = v2).
+			
+			For Write (and Extend) special case:
+			
+			// Document reason why it is this way
+			// Create examples
+			// Think if it needs to be general or simplified
+			
+			forall d1 d2 u u' inum off b1 b2 d1' v1,
+			eqv u' (Some inum) d1 d2 ->
+			exec u d1 (Write inum off b1) (d1', v1) ->
+			exists d2' v2,
+			exec u d2 (Write inum off b2) (d2', v2) /\
+			eqv u' (Some inum) d1' d2'.
+			
+			
+			
+			Do we need generality?
+			?????
+			
+			For change\_owner:
+			
+			forall d1 d2 u u' inum new\_owner d1' v1,
+			eqv u' (Some inum) d1 d2 ->
+			exec u d1 (change\_owner inum new\_owner) (d1', v1) ->
+			exists d2' v2,
+			exec u d2 (change\_owner inum new\_owner) (d2', v2) /\
+			eqv u' (Some inum) d1' d2' /\
+			(u = u' -> v1 = v2).	
+			
+			
+			
+			
+			Functional Correctness:
+			forall d1 u inum new\_owner d1',
+			exec u d1 (change\_owner inum new\_owner) (d1', Some tt) ->
+			d1'[inum] = {| owner:= new\_owner; blocks:=d1[inum].blocks |}.
+			
+			
+			
 		\subsubsection{Generalizing simulations to oracles}
 
 	\subsection{Compositionality}
@@ -148,17 +385,18 @@
 				\hline
 				Disk &
 				Read, Write, Sync &
-				mem A (V * list V) &
+				A $\rightarrow$ (V * list V) &
 				Basic \\
 				\hline
 				Cache &
 				Read, Write, Flush &
-				mem A V &
+				A $\rightarrow$ option V &
 				Basic \\
 				\hline
 				Crypto &
 				Hash, GetKey, Encrypt, Decrypt &
-				list key, mem V (key, V), mem hash (hash, V) &
+				list key, 
+				hash $\rightarrow$ option (hash, V) &
 				Basic \\
 				\hline
 				Crypto Disk &
@@ -173,7 +411,7 @@
 				\hline
 				Logged Disk &
 				Read, Write, Recover &
-				mem A V &
+				A $\rightarrow$ V &
 				Abstraction \\ 
 				\hline
 				Storage &

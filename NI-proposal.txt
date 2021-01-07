@@ -7,7 +7,7 @@ Our definition should cover both leaking from othrs to current user and from cur
 (1) can be established with:
 - Start with two states where others' files are the same but current user's files are different.
 - Run same syscall with same parameters on both 
-	(also two Write syscalls with different block contents 
+	(also two Write(Extend) syscalls with different block contents 
 	e.g. "Write inum offset block1" vs. "Write inum offset block2")
 - Others' files are the same after syscall finishes (or crashes and recovers).
 
@@ -34,15 +34,13 @@ d1 and d2 are equivalent if
 2) For any non-excluded file in d1, corresponding file in d2 have the same owner and the same length.
 
  for any handle inum, 
-	if inum =/= ex, 
-	then 
-		d1[inum].owner = d2[inum].owner and
-		length (d1[inum].blocks) = length (d2[inum].blocks)
+	d1[inum].owner = d2[inum].owner /\
+	length (d1[inum].blocks) = length (d2[inum].blocks)
 	
 3)  Any non-excluded file that is owned by u is the same in both disks.  
 
 	for any handle inum, 
-		if inum =/= ex and d1[inum].owner = u
+		if inum =/= ex /\ d1[inum].owner = u
 		then 
 			d1[inum] = d2[inum]
 
@@ -59,14 +57,13 @@ forall d1 d2 u u' syscall d1' v1,
 	exec u d2 syscall (d2', v2) /\
 	eqv u' None d1' d2'.
 	
-Write special case:
+Write(Extend) special case:
 forall d1 d2 u u' inum off b1 b2 d1' v1,
-	u <> u' ->
-	eqv u' None d1 d2 ->
+	eqv u' (Some inum) d1 d2 ->
 	exec u d1 (Write inum off b1) (d1', v1) ->
 	exists d2' v2,
 	exec u d2 (Write inum off b2) (d2', v2) /\
-	eqv u' None d1' d2'.
+	eqv u' (Some inum) d1' d2'.
 	
 2) 
 forall d1 d2 u syscall d1' v1,
@@ -80,7 +77,6 @@ forall d1 d2 u syscall d1' v1,
 For change_owner:
 1)
 forall d1 d2 u u' inum new_owner d1' v1,
-	u <> u' ->
 	eqv u' (Some inum) d1 d2 ->
 	exec u d1 (change_owner inum new_owner) (d1', v1) ->
 	exists d2' v2,
@@ -120,15 +116,37 @@ forall d1 d2 u u' syscall d1' v1,
 	eqv u' None d1' d2' /\
 	(u = u' -> v1 = v2).
 	
-For Write special case:
+For Write (and Extend) special case:
+
+// Document reason why it is this way
+// Create examples
+// Think if it needs to be general or simplified
 
 forall d1 d2 u u' inum off b1 b2 d1' v1,
-	u <> u' ->
-	eqv u' None d1 d2 ->
+	eqv u' (Some inum) d1 d2 ->
 	exec u d1 (Write inum off b1) (d1', v1) ->
 	exists d2' v2,
 	exec u d2 (Write inum off b2) (d2', v2) /\
-	eqv u' None d1' d2'.
+	eqv u' (Some inum) d1' d2'.
+
+Why we need this?
+Here is an implementation that satisfies the first one but leaks the data in a future call.
+
+write (inum, off, block){
+	append_to_file(stash_file, block)
+	write_to_file(inum, off, block)
+}
+
+if you write to same block in equivalent states, their stash files will still be the same therefore resulting states will be equivalent.
+However, an adversarial read implementation can leak whatever is stored in the stash file.
+
+This implementation will not satisfy the special case theorem because different values will break equivalence between stash files.
+
+What if an implementation uses an underlying layer primitive (like a stash block that is not part of any file) to stash data?
+In that case, two implementation states that differ only in stash block will refine to the same abstract state (which is equivalent to itself for every user). If that is the case, then read operation would return two different values from the same state. This would prevent both NI and Simulation obligations to be proven correct.
+
+Do we need generality?
+?????
 	
 For change_owner:
 
@@ -137,8 +155,17 @@ forall d1 d2 u u' inum new_owner d1' v1,
 	exec u d1 (change_owner inum new_owner) (d1', v1) ->
 	exists d2' v2,
 	exec u d2 (change_owner inum new_owner) (d2', v2) /\
-	eqv u' (Some inum) d1' d2'.
+	eqv u' (Some inum) d1' d2' /\
+	(u = u' -> v1 = v2).	
 	
+
+Why do we need special definition?
+In general definition, if u' = new_owner, contents of the file we are operating on may not be identical in equivalent states. 
+Because of this, resulting states may not be equivalent for the new owner. 
+Because of that we are using a sligthly weaker variant of the equivalence for change_owner.
+Weaker variant does not state anything about the contents of the operated file.
+Proof of contents not changing comes from the functional correctness.
+
 Functional Correctness:
 forall d1 u inum new_owner d1',
 	exec u d1 (change_owner inum new_owner) (d1', Some tt) ->
