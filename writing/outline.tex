@@ -11,6 +11,14 @@
 
 \section{Introduction}
 
+%%% 
+% Motivate this problem.
+% Maybe refer to DiskSec couldn't do it.
+% Protection from adverserial implementation.
+% Important point of view.
+% Make security similar to FC.
+%%%
+
 \section{Related Work}
 
 \section {Definitions}
@@ -95,9 +103,6 @@
 	Need to have a way to take advantage of the fact that they are used safely.
 	Our solution is abstracting the leaky primitive away.
 	Abstract language won’t have a leaky primitive anymore so language level techniques can be used.
-	
-		\subsubsection{Layer system}
-		\subsubsection{Abstraction and Bisimulation}
 
 	\subsection{Addressing frequency leakage}
 	Our suggested solution, parameterize the execution with a nondeterminism oracle, so that execution is deterministic w.r.t. an oracle.
@@ -239,6 +244,8 @@
 			
 			$eqv\ u'\ (Some\ inum)\ d_1'\ d_2'$\\
 			
+			%It covers confidentiality of chained writes
+			
 			{\bf Case 2}
 			 
 			 $\forall\ d_1\ d_2\ u\ syscall\ d_1'\ v_1,$
@@ -365,12 +372,113 @@
 
 	\subsection{Compositionality}
 		\subsubsection{Layer system}
+		Layer system allows users to define languages as well as combine two languages into a single one, allowing decoupling of unrelated parts without loss of functionality.
+		Its main building block is a core.\\ 
+		
+		{\bf Cores}
+		
+		Cores are the main component of the layer system. They are what a developer defines to create a new layer. They consist of four main parts: tokens, state, operations and execution semantics. Developers have total freedom in defining cores. Framework itself treats cores opaquely.
+		
+		\paragraph{Tokens}
+		Tokens are the structure that provides nondeterminism to the system. A token provides all required nondeterminism for a single step of execution. A token can be as simple as a directive to continue execution or crash at that point or something more complex like a new encryption key, a free block number or even a list of tokens for other cores.
+		
+		\paragraph{Operations}
+		These are the “opcodes” of the language. (e.g. Read and Write for a disk).
+		
+		
+		\paragraph{Execution Semantics}
+		Describes execution semantics of each operation. Must be deterministic with respect to a given token.\\
+		
+		{\bf Languages}
+		
+		A language is a structure that extends a core with a stateful computation monad. It has tokens, state, program, normal and recovery execution semantics. All of these are generated automatically from a given core by the framework.
+		
+		\paragraph{Recovery Semantics}
+		Recovery semantics takes a list of oracles, a program, a recovery program and a list of reboot state functions. It is deterministic given a particular oracle list and a reboot state function list.
+		
+		{\bf //TODO: example semantics here}\\
+				
+		{\bf Horizontal Composition}
+		
+		Framework allows developers to automatically combine two cores into a new core. This allows developers to introduce new state and functionality to their system at appropriate abstraction levels without modifying the rest of the system.
+		
+		Given two cores, framework creates a new core by “tagging” the tokens and operations either first or second (i.e. uses a sum monad). New execution semantics are a combination of original semantics, and the new state is the pair of original states. 
+		
+		Framework also provides two functions to ‘lift’ existing programs from languages derived from the two cores to programs in a language derived from their composition. This allows using already existing programs in input languages.		
+		
 		\subsubsection{Noninterference transfer}
+		
+		
+		
+		{\bf Simulation System}
+		
+		
+		{\bf Core-to-Language Refinement}
+		Core-to-language refinement (core refinement for short) is a refinement between the core of an abstraction and the language of an implementation. It has 4 components: a compile function, a state refinement relation, a token refinement relation and a proof that compiled operations preserve refinement. 
+		
+		\paragraph{Compile Function}
+		This is a function from an abstract operation to an implementation program.
+		
+		\paragraph{State Refinement Relation}
+		This is the relation that relates an abstract state to an implementation state. It could be a many-to-many relation.
+		
+		\paragraph{Token Refinement Relation}
+		This is a refinement relation between a token of abstraction and an oracle of implementation. It also depends on an abstract operation and an implementation state.The operation is needed because not all tokens are valid for all operations. Implementation state is used to inject some information into a token to hide some implementation details (i.e. an empty block number n to create a NewBlockNum token). 
+		
+		\paragraph{Refinement Preservation Proof}
+		To complete the refinement, a proof of that any valid execution of a compiled operation should preserve the refinement should be supplied. This theorem ensures that implementation execution cannot result in a “rogue state” which does not correspond to an abstract state.\\
+		
+		{\bf Language-to-Language Refinement}
+		Language-to-language refinement (refinement for short) is a refinement between the language of an abstraction and the language of an implementation.
+		
+		Framework provides the machinery to automatically generate a refinement from a given core refinement.
+		
+		To facilitate that, it extends the compile function for return and bind. 
+		Also defines an abstract oracle to implementation oracle refinement, based on the token refinement of core refinement. 
+		
+		Since the state of a core and its language are the same, state refinement relation stays the same.\\
+		
+		
+		{\bf Strong Simulation}\\
+		
+		
+		{\bf Self Simulation}
+		
+		This is the general definition that captures noninterference property.
+		It is parameterized over 
+		two programs p1 and p2, 
+		a recovery program
+		a list of reboot state functions
+		a state validity predicate
+		a simulation relation.
+		
+		It states that an execution (with recovery) of p1 from a valid state implies the existence of an execution (with recovery) of p2 from another valid state that is related to the first one via simulation. Furthermore, return values of these two executions are the same, resulting states are valid and related to each other.
+		
+		
 		\subsubsection{Bisimulation to Simulation via Determinism}
+		
+		
 
 	\subsection{Crash Support}
-		\subsubsection{Crash semantics} 
-		\subsubsection{Reboot functions}
+		\subsubsection{Crash semantics}
+		Crash semantics of a language recursively defined over a program and a recovery program. It models two possibilities of overall execution can take:
+		Either original program finishes successfully, or program crashes then recovers after certain number of attempts by running recovery program.  
+		Variable number of attempts are required to model the fact that system can crash in the middle of a recovery.
+		
+		{\bf //TODO: Figure here}
+		
+		Since there may be multiple crashes until a successful recovery, semantics uses a list of oracles. Whenever a crash happens, next oracle in the list is used to run the next recovery program.
+		
+		\subsubsection{Reboot State Functions}
+		Depending on a type of storage that is used, state of a storage after a crash and reboot may not be the same with its state just before the crash.
+		For example, a disk may lose some writes, a memory loses its entire content etc.
+		
+		We model this phenomenon with what we call a reboot state function. A reboot state function is a function such that, given a state just before a crash, gives the state after a crash and reboot. It is true that there may be possible after reboot states that corresponds to a single before crash state. In our framework, each of those possibilities are represented via a different reboot state function.
+		
+		{\bf //TODO: Disk RSF example here}
+		
+		Reboot state functions are part of the trusted definitions provided by a developer.
+		
 		\subsubsection{Crash refinement}
 \newpage
 \section{Framework in Action: ConFS}
@@ -447,7 +555,150 @@
 			\end{tabularx}
 	\subsection{Implementation}
 		\subsubsection{Modules}
-		\subsubsection{Hash collisions and encrypted log}
+		\begin{tabularx}{\linewidth}{|L|L|L|L|L|}
+		\hline
+		Component & API & Used Implementation &	Used Layer & Abstracted Into \\
+		\hline
+		Batch Operations &
+		read\_consecutive, write\_consecutive,
+		write\_batch, hash\_all,
+		encrypt\_all, decrypt\_all &
+		& 
+		Crypto Disk & 
+		\\
+		\hline
+		Log &
+		commit, recover &
+		Batch Operations &
+		Crypto Disk & 
+		\\
+		\hline
+		Log Cache &
+		read, 
+		write, 
+		recover &
+		Log &
+		Cached Disk &
+		Logged Disk \\
+		\hline
+		Transaction &
+		start, commit, abort, 
+		read, write, recover &
+		&
+		Transaction Cache &
+		Transactional Disk \\
+		\hline
+		Block Allocator &
+		alloc, free, read, write &
+		&
+		Transactional Disk &
+		\\
+		\hline
+		Inode &
+		alloc, free, expand, change\_owner, get\_block\_number, get\_block\_numbers, get\_owner &
+		Block Allocator &
+		Transactional Disk &
+		\\
+		\hline
+		File &
+		read, write, extend, change\_owner, create, delete, recover &
+		Block Allocator, Inode &
+		Authenticated Disk &
+		File Disk \\
+		\hline
+	\end{tabularx}
+
+	\subsubsection{Hash collisions and encrypted log}
+		Since our implementation is using checksum logging, leakage of raw data after a crash is possible due to hash collisions. Sequence of events that leads to a leakage in a simple log can be summarized as follows:
+		
+		1) Log contains $block_1$ with matching hash $hash(block_1)$ in the header.
+		
+		2) A syscall that writes $block_2$ is initiated.
+		
+		3) FS calculates, writes $hash(block_2)$ 
+		
+		  (and by chance $hash(block_1) = hash(block_2)$).
+		  
+		4) Crash happens, after reboot $block_2$ didn't make it to the disk but header did.
+		
+		5) $block_1$ is written in place of $block_2$.
+		
+		To prevent this leakage, we implemented an encrypted log where each transaction is encrypted with a fresh secret key before written to the log.
+		Hash of the log is computed over the encrypted blocks. When log needs to be applied, FS decrypts the blocks before writing them to their permanent places.
+		
+		This implementation does not prevent hash collisions but it changes what is written back in step 5 to $decrypt(k_2, encrypt(k_1, block_1))$, which is independent of $block_1$ by standard cryptographic assumptions.
+		
+		\subsubsection{Unequal Probabilities After Crash and Encryption}
+		
+		Consider following scenario:
+		
+		1) There are two equivalent states: Both logs are empty but residual blocks are $b_1$ and $b_2$.
+		
+		2) User attempts to write $b_1$.
+		
+		3) Crash happens after write but before sync.
+		
+		4) After reboot, new header is persisted but the new block didn't.
+		
+		5) After recovery, one state has empty log, and other has a valid transaction.\\
+		
+		{\bf Why didn't we encounter this during proofs?}
+		
+		This dichotomy will manifest itself in refinement of abstract tokens.
+		
+		First state will require abstract token to be CrashAfter since transaction is committed after recovery.
+		
+		Second state will require abstract token to be CrashBefore since transaction is rolled back after recovery.
+		
+		This conflict would appear in the proof of two abstract tokens refined from two related states being the same.
+		
+		I didn't encounter this because I didn't do that proof yet. If I attempted, it probably wouldn't go through.\\
+		
+		{\bf How can we solve this?}\\
+		What needs to be fixed is that, with the same reboot function, both states either should roll back or keep the transaction.
+		Above requirement means that, there shouldn't be a case where newly written block to log is exactly equal to the already existing block.
+		There are two ways to achieve this:\\
+		
+		1) Design a log that {\bf guarantees} that requirement.
+		
+		I did it back in the day but it was very complicated. I expect it to be practically infeasible to reason about that log. That is why we didn't pursue this. 
+		Could be an interesting side project though.\\
+		
+		2) Design a log where this case is an {\bf exponentially unlikely} event. 
+		This makes it reasonable to exclude such cases from our proofs.
+		
+		This is the approach we take with hash collisions and encryption achieves this.
+		If we encrypt each transaction with a fresh key, above situation only happens when $encrypt(k_1, b_1) = encrypt (k_2, b_2)$ where $k_1 \ne k_2$. This is exponentially unlikely as far as I am aware.\\
+		
+		{\bf How can we capture this?}\\		
+		We can't introduce an axiom that says 
+		
+		$\forall\ k_1\ k_2\ b_1\ b_2,\ k_1 \ne k_2 \rightarrow encrypt(k_1, b_1) \ne encrypt(k_2, b_2)$\\
+		
+		At first glance it looks fine because key and block are abstract types. 
+		Therefore you can't construct an example where $k_1 \ne k_2\ \wedge\ encrypt(k_1, b_1) = encrypt(k_2, b_2)$ which would allow you to prove False.
+		 
+		Still, this isn't kosher because it makes our model not fit the world. There is no such encrypt function that satisfies the above axiom. Assuming it would make our proofs meaningless, since they are not about our world anymore.\\
+		
+		Another way to achieve it is how we achieved it with hashing. Keep a record of each encryption done, when you see a collision like above, let program get stuck. This is the implementation I had before, which I scrapped recently. 
+		
+		This was also the reason why our GetKey was weird. We needed to know that there won't be a collision when we encrypt our data with the generated key. I could be able to get rid of that weirdness thanks to we moving to simulations from bisimulations.
+		Bisimulations required total correctness, simulations require partial correctness.\\
+		
+		Although above approach plays nice with 95\% of the project, it has a problem with write/extend special case NI proofs' transfer.
+		One requirements of the transfer lemma for spacial case is "if $s_1$ and $s_2$ are equivalent states and you can run $write(a, b_1)$ from $s_1$, then you can run $write(a, b_2)$ from $s_2$ with the same oracle."
+		
+		To show that you can run $write(a, b_2)$ from $s_2$, you need to prove that there won't be any collision when you encrypt $b_2$ with a newly generated key. It is the same key that is generated in $write(a, b_1)$, since the oracles are the same.
+		
+		Success of first execution gives you the fact that there is no collision when you encrypt $b_1$. However, there is no way to prove from the stated fact that there won't be a collision when you encrypt $b_2$. This will prevent you from proving the desired property.\\
+		
+		{\bf I currently have no solution to this. I will keep thinking and keep you updated about it. If anything comes to your mind, please let me know.}
+		 
+		
+		
+		
+		
+		
 \newpage
 \section{Evaluation}
         \subsection{Are specs reasonable?}
