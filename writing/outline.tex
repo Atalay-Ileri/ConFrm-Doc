@@ -1,5 +1,6 @@
 \documentclass[onecolumn]{paper}
 \usepackage{tabularx}
+\usepackage{color}
 \newcolumntype{L}{>{\raggedright\arraybackslash}X}
 
 \title{ConFrm: Confidentiality Framework for Crash Safe Storage Systems}
@@ -692,9 +693,20 @@
 		
 		Success of first execution gives you the fact that there is no collision when you encrypt $b_1$. However, there is no way to prove from the stated fact that there won't be a collision when you encrypt $b_2$. This will prevent you from proving the desired property.\\
 		
-		{\bf I currently have no solution to this. I will keep thinking and keep you updated about it. If anything comes to your mind, please let me know.}
+		{\bf I currently have no solution to this. I will keep thinking and keep you updated about it. If anything comes to your mind, please let me know.}\\
 		 
+		{\color{red} \bf Nickolai:} Thanks, I think the problem makes more sense now.
+		In terms of how to solve it..  What about putting the ciphertext into the oracle when encrypt is invoked?
+		What I mean is..  When the application calls encrypt(), you choose a ciphertext non-deterministically (i.e., through the oracle).  This gives you the freedom to, in the proof, manipulate the ciphertext chosen for any particular encryption.
+		If you had this degree of freedom, then, when proving this case, you could demonstrate a second execution by showing another choice of encrypted result in the other oracle, so that the execution of the recovery code goes down the same path.
+		That is, if in execution 1 you saw encrypt(k1, b1) = encrypt(k2, b2), then you can make it also be equal in execution 2.
+		And similarly if you saw the two encryptions be non-equal in execution 1, you can make them be non-equal in execution 2.
+		The only constraint on this new oracle feature is that you can't choose colliding ciphertexts.
+		This means that, to give you this necessary degree of freedom, you have to choose fresh keys often enough so that you're never constrained too much by prior encryptions.\\
 		
+		{\color{blue} \bf Atalay:} This may not work due to following problem.
+		
+		Framework requires oracles to be independent of the confidential data. This means you should be able to execute $write(a, b_1)$ from $s_1$, and $write(a, b_2)$ from $s_2$ with the same oracle. If oracle supplies the fresh key and the ciphertext, then it will be encrypt(k, b1) = encrypt(k, b2). Only way this being true is that, somehow, encrypt function of $s_1$ is different than one in $s_2$. I am not entirely sure what this entails and can this difference be a source of leakage.
 		
 		
 		
