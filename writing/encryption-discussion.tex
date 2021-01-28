@@ -1,0 +1,127 @@
+\documentclass[onecolumn]{paper}
+\usepackage{tabularx}
+\usepackage{color}
+\begin{document}
+		
+		\section{Unequal Probabilities After Crash and Encryption}
+		
+		Consider following scenario:
+		
+		1) There are two equivalent states: Both logs are empty but residual blocks are $b_1$ and $b_2$.
+		
+		2) User attempts to write $b_1$.
+		
+		3) Crash happens after write but before sync.
+		
+		4) After reboot, new header is persisted but the new block didn't.
+		
+		5) After recovery, one state has empty log, and other has a valid transaction.\\
+		
+		{\bf Why didn't we encounter this during proofs?}
+		
+		This dichotomy will manifest itself in refinement of abstract tokens.
+		
+		First state will require abstract token to be CrashAfter since transaction is committed after recovery.
+		
+		Second state will require abstract token to be CrashBefore since transaction is rolled back after recovery.
+		
+		This conflict would appear in the proof of two abstract tokens refined from two related states being the same.
+		
+		I didn't encounter this because I didn't do that proof yet. If I attempted, it probably wouldn't go through.\\
+		
+		{\bf How can we solve this?}\\
+		What needs to be fixed is that, with the same reboot function, both states either should roll back or keep the transaction.
+		Above requirement means that, there shouldn't be a case where newly written block to log is exactly equal to the already existing block.
+		There are two ways to achieve this:\\
+		
+		1) Design a log that {\bf guarantees} that requirement.
+		
+		I did it back in the day but it was very complicated. I expect it to be practically infeasible to reason about that log. That is why we didn't pursue this. 
+		Could be an interesting side project though.\\
+		
+		2) Design a log where this case is an {\bf exponentially unlikely} event. 
+		This makes it reasonable to exclude such cases from our proofs.
+		
+		This is the approach we take with hash collisions and encryption achieves this.
+		If we encrypt each transaction with a fresh key, above situation only happens when $encrypt(k_1, b_1) = encrypt (k_2, b_2)$ where $k_1 \ne k_2$. This is exponentially unlikely as far as I am aware.\\
+		
+		{\bf How can we capture this?}\\		
+		We can't introduce an axiom that says 
+		
+		$\forall\ k_1\ k_2\ b_1\ b_2,\ k_1 \ne k_2 \rightarrow encrypt(k_1, b_1) \ne encrypt(k_2, b_2)$\\
+		
+		At first glance it looks fine because key and block are abstract types. 
+		Therefore you can't construct an example where $k_1 \ne k_2\ \wedge\ encrypt(k_1, b_1) = encrypt(k_2, b_2)$ which would allow you to prove False.
+		 
+		Still, this isn't kosher because it makes our model not fit the world. There is no such encrypt function that satisfies the above axiom. Assuming it would make our proofs meaningless, since they are not about our world anymore.\\
+		
+		Another way to achieve it is how we achieved it with hashing. Keep a record of each encryption done, when you see a collision like above, let program get stuck. This is the implementation I had before, which I scrapped recently. 
+		
+		This was also the reason why our GetKey was weird. We needed to know that there won't be a collision when we encrypt our data with the generated key. I could be able to get rid of that weirdness thanks to we moving to simulations from bisimulations.
+		Bisimulations required total correctness, simulations require partial correctness.\\
+		
+		Although above approach plays nice with 95\% of the project, it has a problem with write/extend special case NI proofs' transfer.
+		One requirements of the transfer lemma for spacial case is "if $s_1$ and $s_2$ are equivalent states and you can run $write(a, b_1)$ from $s_1$, then you can run $write(a, b_2)$ from $s_2$ with the same oracle."
+		
+		To show that you can run $write(a, b_2)$ from $s_2$, you need to prove that there won't be any collision when you encrypt $b_2$ with a newly generated key. It is the same key that is generated in $write(a, b_1)$, since the oracles are the same.
+		
+		Success of first execution gives you the fact that there is no collision when you encrypt $b_1$. However, there is no way to prove from the stated fact that there won't be a collision when you encrypt $b_2$. This will prevent you from proving the desired property.\\
+		
+		{\bf I currently have no solution to this. I will keep thinking and keep you updated about it. If anything comes to your mind, please let me know.}\\
+		 
+		{\color{red} \bf Nickolai:} Thanks, I think the problem makes more sense now.
+		In terms of how to solve it..  What about putting the ciphertext into the oracle when encrypt is invoked?
+		What I mean is..  When the application calls encrypt(), you choose a ciphertext non-deterministically (i.e., through the oracle).  This gives you the freedom to, in the proof, manipulate the ciphertext chosen for any particular encryption.
+		If you had this degree of freedom, then, when proving this case, you could demonstrate a second execution by showing another choice of encrypted result in the other oracle, so that the execution of the recovery code goes down the same path.
+		That is, if in execution 1 you saw encrypt(k1, b1) = encrypt(k2, b2), then you can make it also be equal in execution 2.
+		And similarly if you saw the two encryptions be non-equal in execution 1, you can make them be non-equal in execution 2.
+		The only constraint on this new oracle feature is that you can't choose colliding ciphertexts.
+		This means that, to give you this necessary degree of freedom, you have to choose fresh keys often enough so that you're never constrained too much by prior encryptions.\\
+		
+		{\color{blue} \bf Atalay:} This may not work due to following problem.
+		
+		Framework requires oracles to be independent of the confidential data. This means you should be able to execute $write(a, b_1)$ from $s_1$, and $write(a, b_2)$ from $s_2$ with the same oracle. If oracle supplies the fresh key and the ciphertext, then it will be encrypt(k, b1) = encrypt(k, b2). Only way this being true is that, somehow, encrypt function of $s_1$ is different than one in $s_2$. I am not entirely sure what this entails and can this difference be a source of leakage.
+		
+		
+		\subsection{Oracle Chosen Ciphertext Approach}
+		The system (lowest layer) allows encrypting at most one block (plaintext) with a particular key.  The state tracks key $\rightarrow$ option (plaintext * ciphertext) for this purpose.  If this mapping contains None for some key, then calling encrypt(key, plaintext) chooses a random ciphertext (supplied by the oracle) and puts Some (plaintext, ciphertext) into that state under the corresponding key.
+		
+		If this mapping contains Some \_, it's not legal to call encrypt anymore for that key.  So, for that matter, keygen() and encrypt() can be combined, so that this combined function returns the fresh key and the ciphertext all at once.
+		
+		decrypt(key, ciphertext) can be called only if that mapping contains precisely that ciphertext for that key, in which case it returns the corresponding plaintext.  Otherwise, calling decrypt is not allowed (if the mapping is None or contains some other ciphertext).
+		
+		The implication of this model of encryption is that two blocks (b1 and b2) will have precisely the same ciphertext (supplied by the identical oracle) in the two executions, if these blocks are encrypted with the same key.
+		
+		To achieve the constraint of at most one block (plaintext) per key, I'm thinking the file system generates a fresh key every time it needs to encrypt a block.  Whenever the file system needs to write some block to the log, it encrypts it with a fresh key, and stores the key wherever it's already storing the address that goes along with this block.  On recovery, decrypting blocks is straightforward: just use each block's key, after validating that these are indeed the correct blocks (i.e., hash matches).
+		
+		In practice, it might be a bit silly to generate a fresh key for each block, so a realistic implementation would probably use the same key but a fresh IV (based on a monotonically increasing counter) for each block.
+		
+		It might even be worth modeling that IV-based optimization, because it would allow the file system to not store a separate key for each block in the log, and instead just have the header store the key and the first sequence number for the logged blocks.  This way, on recovery, the file system code will decrypt using sequence numbers starting from the first one, and it doesn't require additional per-block overhead for a key or IV.
+		But I think this "in practice" comment is just an optimization if the idea above makes sense.\\
+		
+		{\bf All possible histories are related problem}
+		
+		Think our FS but abstractions are "collapsed". So there is base layers (disk, crypto etc.) And a single layer of abstraction above the entire implementation (file disk).
+		
+		Since file disk doesn't have a notion of encryption, base layer states with different "encryption histories" will refine the same file disk. More precisely, any combination of "chosen ciphertexts" as the history will be a valid refinement.
+		
+		This means no matter what the oracle chooses as ciphertext for the result of the new encryption, there will be two related states where it will cause a collision in only one of them.
+		
+		I think above example is a strong evidence of why "ciphertext choosing" approaches may not work.
+		No matter what the choice is, there will be a related state where it is used.
+		
+		\subsection{Excluding Colliding Oracles Approach}
+		Another approach we can take is excluding series of events that leads to a collision in encryption from our theorems. Similar to hashing, our theorems will have a condition that say "if there is no collisions, ..." To justify this approach, probability of it happening should be exponentially low.
+		{\color{red} I don't know the probability of it yet.} 
+		
+		If probability is not low enough, then we can add a scheme where encryption history only consists of last (2 * \# of blocks in the log) encryption results. It is an upper bound on how many blocks can be on the disk at any given time. Since this is much much smaller than possible combinations, I think it would be justifiable to assume such collision won't appear on the log.
+		
+		Apart from that, plan is same with hashing. System keeps track of encryption results and if it sees a collision, it gets stuck.
+	
+		Our premise will look like this:
+		\begin{verbatim}
+			(forall k, In (NewKey k) oracle -> (encrypt k v2) doesn't collide in s2) ->
+			NI statement for (write a v1, write a v2) holds.
+		\end{verbatim} 
+
+\end{document}
