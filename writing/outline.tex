@@ -30,14 +30,6 @@
 \section{Problems}
         \subsection{Leakage via hashing}
 
-%{\color{red}
-% Motivate this problem.
-% Maybe refer to DiskSec couldn't do it.
-% Protection from adverserial implementation.
-% Important point of view.
-% Make security similar to FC.
-%}
-
 	\paragraph*{Malicious Example}
 	\begin{verbatim}
 		hash <- hash_block b
@@ -504,8 +496,9 @@
 				\hline
 				Crypto &
 				Hash, GetKey, Encrypt, Decrypt &
-				list key, 
-				hash $\rightarrow$ option (hash, V) &
+				list key,
+				hash $\rightarrow$ option (hash, V),
+				V $\rightarrow$ option (key, V) &
 				Basic \\
 				\hline
 				Crypto Disk &
@@ -519,28 +512,28 @@
 				Composed \\
 				\hline
 				Logged Disk &
-				Read, Write, Recover &
+				Init, Read, Write, Recover &
 				A $\rightarrow$ V &
 				Abstraction \\ 
 				\hline
-				Storage &
+				List &
 				Get, Put, Delete &
-				option V &
+				list V &
 				Basic \\
 				\hline
 				Transaction Cache &
-				Storage ops + Logged Disk ops &
-				Storage state + Logged Disk state &
+				List ops + Logged Disk ops &
+				List state + Logged Disk state &
 				Composed \\
 				\hline
 				Transactional Disk &
-				Start, Read, Write, Commit, Abort, Recover &
-				mem A V , mem A V &
+				Init, Read, Write, Commit, Abort, Recover &
+				A $\rightarrow$ V , A $\rightarrow$ V &
 				Abstraction \\
 				\hline
 				Authentication &
 				Auth &
-				user &
+				 &
 				Basic \\
 				\hline
 				Authenticated Disk &
@@ -549,8 +542,8 @@
 				Composed \\
 				\hline
 				File Disk &
-				Read, Write, Extend, Set Owner, Create, Delete, Recover &
-				mem A File &
+				Read, Write, Extend, Change Owner, Create, Delete, Recover &
+				A $\rightarrow$ option File &
 				Abstraction \\
 				\hline
 			\end{tabularx}
@@ -569,12 +562,13 @@
 		\\
 		\hline
 		Log &
-		commit, recover &
+		init, commit, recover &
 		Batch Operations &
 		Crypto Disk & 
 		\\
 		\hline
 		Log Cache &
+		init,
 		read, 
 		write, 
 		recover &
@@ -583,7 +577,7 @@
 		Logged Disk \\
 		\hline
 		Transaction &
-		start, commit, abort, 
+		init, commit, abort, 
 		read, write, recover &
 		&
 		Transaction Cache &
@@ -602,7 +596,7 @@
 		\\
 		\hline
 		File &
-		read, write, extend, change\_owner, create, delete, recover &
+		init, read, write, extend, change\_owner, create, delete, recover &
 		Block Allocator, Inode &
 		Authenticated Disk &
 		File Disk \\

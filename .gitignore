@@ -20,6 +20,10 @@
 *.vo
 *.vok
 *.vos
+*.log
+thesis-proposal/*.pdf
+*.aux
+*.synctex.gz
 .coq-native/
 .csdp.cache
 .lia.cache

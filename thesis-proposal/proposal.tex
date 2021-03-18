@@ -1,0 +1,101 @@
+\documentclass[onecolumn]{paper}
+\usepackage{tabularx}
+\usepackage{color}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+
+\title{ConFrm: Confidentiality Framework for Crash Safe Storage Systems}
+\author{Atalay Mert Ileri \and Frans Kaashoek \and Nickolai Zeldovich}
+\begin{document}
+\maketitle
+
+\subsection*{System we consider}
+We are consider a storage system with a course-grained ownership. smallest data unit will be referred as a data block, Data are accessed with "a handle", which represents a group of data blocks. Each handle has an owner that is allowed to read and write data to it as well as transfer its ownership to another user.
+
+We are also assuming a crash-resistant transactional storage system where every API call is executed atomically. If a crash happens during an API call, then effects of the call either happens completely or doesn't happen at all.
+
+We assume system is running on a disk with asynchronious buffered writes. 
+
+\subsection*{Running example}
+Throughout the paper, we will follow the scenario where a user writes some data to a file and then transfers ownership of the file to another user.
+\begin{verbatim}
+	append_and_transfer(handle, data, new_owner) {
+		extend(handle, data)
+		change_owner(handle, new_owner)
+	}
+\end{verbatim}
+Example is simple enough to not have any distracting details but complex enough to reveal subtleties involved in a possibly malicious storage system implementation.\\
+
+Possible problems that can arise in implementation of write:
+
+- System can stash away the input confidential data. 
+	(Same as reading the file and stashing it somewhere?)
+
+- System can write data to someone else's file
+
+- System can leak data due to its crash-resistance mechanisms.\\
+
+Possible problems that can arise in implementation of change\_owner:
+
+- System can give ownership to someone else,
+
+- System can write some confidential data belonging to the current user 
+	to the file before transferring it to new owner.
+	
+- System can read file's content then reveal it some other time.\\
+
+If we generalize these problems we can have following general groups:
+
+- Hiding confidential data in a place that gets abstracted away.
+This place will be referred as "the stash" and the action of hiding data there as "stashing". This data either can be the new data that is provided to the system as an input to an API call or already existing data that is read by the system during an API call.
+
+- Transferring an existing data to another user. This could be the stashed or already on-disk data.
+
+- Revealing data contents via different crash-and-recovery outcomes.
+
+%a good starting point might be to articulate what problem you are trying to solve and what your approach / design for addressing that problem looks like.  so, something along the lines of the goal and design sections.
+
+\subsection*{Problems and Motivation}
+Just like functionality of systems can be precisely defined in terms of specifications, desired properties of those systems can be precisely defined in terms of system properties. A class of these properties that encompasses security and liveness is called hyperproperties. Unlike properties that depends on single run of a system, hyperproperties relate multiple runs of a system. Because of this distinction, hyperproperties of a system are harder to prove and are not preserved under simulation based refinement. A strong notion of simulation called bisimulation is sufficient to preserve hyperproperties. However this bisimulation requirement reduces the power of abstraction significantly.
+
+This poses a challenge to the modular approaches to proving hyperproperties. Since simulation is a core technique to modularly proving an implementation behaving similar to an abstract representation.\\
+
+//Example here\\
+
+Two questions ????\\
+
+Challenge is solving above two questions in a way that enables modularity and compositionality. On top of that, we aim to provide strong abstraction tools to developer, that enables expression of clear specifications for the system.
+
+\subsection*{Approach}
+To address the problems stated above, we used 3 approaches:
+- Quantification of nondeterminism via tokens.
+- Abstraction via layer system
+- Property transfer via simulation proofs.
+
+\subsubsection*{Quantification of nondeterminism}
+This approach have two benefits. First and most important one is that it enables us to
+turn nondeterministic executions into relatively deterministic ones. 
+Relatively deterministic execution is defined as an execution trace that is deterministic given a particular sequence of nondeterministic choices.\\
+
+//EXAMPLE\\
+
+This method is implemented via tokens, an inductive data type that is provided to execution relation. Each token represents a particular nondeterministic choice (e. g. should execution continue or crash?). In some particular cases, they even act like wrappers for a list of tokens themselves. In other words, a token is a unit of nondeterminism that is required to execute a single step.\\
+
+//EXAMPLE\\
+
+With this modified definition, we managed to state and prove a stronger version of noninterference: relatively deterministic noninterference (RDNI). RDNI requires that for any sequence of nondeterministic choices, if there is a completed execution of a program from a state, there exists another execution of the same program* from a related state with same choice sequence. Our definition is termination sensitive.
+
+RDNI's requirement for matching execution from any choice sequence ensures that no matter which nondeterministic branch is followed during the execution, there will be an equivalent execution from an equivalent state. This one-to-one correspondence implies that a state cannot be distinguished based on repeated observation of the system.
+
+Second benefit of quantification is that it allowed us to weaken the requirement for NI preserving refinements. It is known that a bisimulation between implementation and abstraction is required for preserving NI if execution is nondeterministic. Relative determinism allows us to relax this requirement into a simulation with some extra properties. \\
+
+//Explanatory image here\\
+
+One critical importance of this change is it allows stronger abstractions feasible that wouldn't be feasible under bisimulations. This allows developers to keep only crucial details of the system and hide the ones that are implementation specific.\\
+
+//Example\\
+
+\subsubsection*{Abstraction via layer system}
+
+
+\subsubsection*{Property transfer via simulation proofs.}
+\end{document}
