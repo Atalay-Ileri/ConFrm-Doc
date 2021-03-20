@@ -1,6 +1,8 @@
 \documentclass[onecolumn]{paper}
 \usepackage{tabularx}
 \usepackage{color}
+\usepackage{listings}
+\usepackage{verbatim}
 \newcolumntype{L}{>{\raggedright\arraybackslash}X}
 
 \title{ConFrm: Confidentiality Framework for Crash Safe Storage Systems}
@@ -11,15 +13,15 @@
 %Nickolai: a good starting point might be to articulate what problem you are trying to solve and what your approach / design for addressing that problem looks like.  so, something along the lines of the goal and design sections.
 
 \subsection*{Problems and Motivation}
+\paragraph{Unsafety from Frequency}
 We are trying to tackle two problems in this work. First problem is the interaction between nondeterminism and noninterference. More particularly, standard noninterference definition fails to address leakages that is resulted from different frequencies of possible execution traces of the same program. A simple example of this weakness can be seen below:
 
-\begin{verbatim}
-	should_leak <- get_random_bit()
-	if (should_leak = 1)
-	return secret_bit
-	else
-	return get_random_bit()
-\end{verbatim}
+\begin{lstlisting}
+if (random_bit() == 1)
+  return secret_bit
+else
+  return random_bit()
+\end{lstlisting}
 
 This code leaks the secret bit 50\% of the time and outputs a random bit 50\% of the time.
 Although above program satisfies NI definition, secret bit can be determined via the observed frequency of repeated calls.\\
@@ -34,30 +36,34 @@ Although above program satisfies NI definition, secret bit can be determined via
 	\hline
 \end{tabular}\\
  
- 
-Second problem is using potentially leaky primitives in a noninterfering ways. Many storage systems processes the data provided to them before storing it. One classic example of this is data deduplication. Deduplication requires branching on a confidential data, which can be abused if not careful. Here is a simple deduplication example that can leak data:
+\paragraph{Unsafe Primitives}
+Second problem is using potentially unsafe primitives in an implementation. Many storage systems processes the data provided to them before storing it. This sometimes includes making decisions based on the contents of the data. A potentially malicious developer can take advantage of this capability to leak information.
 
-\begin{verbatim}
-	write_to_txn(v) {
-	if (v in txn)
-		return false
-	else
-		add_to_txn(v)
-		return true
-	}
-\end{verbatim}
+One classic example of this is data deduplication. Deduplication requires branching on a confidential data, which can be abused if not careful. Here is a trivial deduplication example that can leak data:
 
-This implementation allows a user to query the contents of the transaction by taking advantage of deduplication mechanism. However it is still possible to do deduplication safely by deduplicating just before committing the transaction. Such a deferred deduplication will still branch on confidential data but without leaking it.
+\begin{lstlisting}
+write_to_txn(v)
+  if (v in txn)
+    return false
+  else
+    add_to_txn(v)
+    return true
+\end{lstlisting}
 
-Challenge is solving above two questions in a way that enables modularity and compositionality. On top of that, we aim to provide strong abstraction tools to developer, that enables expression of clear specifications for the system.
+This implementation allows an adversary to query the contents of the transaction. Although it may be appealing to prohibit such behaviors to ensure code is safe, it is a very constraining approach which eliminates many possible efficient implementations. Ideal solution would be finding a way to restrict their unsafe usage.
 
-\subsection*{Approach}
-To address the problems stated above, we used 3 approaches:
-- Quantification of nondeterminism via tokens.
-- Abstraction via layer system
+In deduplication example, it is still possible to do it safely by deduplicating just before committing the transaction. Such a deferred deduplication will still branch on confidential data but without revealing it it.
+
+\paragraph{Scalability}
+We aim to solve above problems while providing scalability. Any technique that will be used in large scale projects require to support modularity, compositionality, expressive power and interoperability with other techniques. Provided solution should not constrain the developer to certain proof technique for proving safety, as well as, allow him to model systems he is working on to the desired detail.
+
+\subsection*{Solution Approach}
+To address the problems stated above, we used 3 approaches:\\
+- Quantification of nondeterminism via tokens.\\
+- Abstraction via layer system.\\
 - Property transfer via simulation proofs.
 
-\subsubsection*{Quantification of nondeterminism}
+\subsubsection*{Quantification of Nondeterminism}
 This approach have two benefits. First and most important one is that it enables us to
 turn nondeterministic executions into relatively deterministic ones. 
 Relatively deterministic execution is defined as an execution trace that is deterministic given a particular sequence of nondeterministic choices.\\
@@ -72,20 +78,20 @@ With this modified definition, we managed to state and prove a stronger version 
 
 RDNI's requirement for matching execution from any choice sequence ensures that no matter which nondeterministic branch is followed during the execution, there will be an equivalent execution from an equivalent state. This one-to-one correspondence implies that a state cannot be distinguished based on repeated observation of the system.
 
-Second benefit of quantification is that it allowed us to weaken the requirement for NI preserving refinements. It is known that a bisimulation between implementation and abstraction is required for preserving NI if execution is nondeterministic. Relative determinism allows us to relax this requirement into a simulation with some extra properties. \\
+Second benefit of quantification is that it allowed us to weaken the requirement for NI preserving refinements. It is known that a bisimulation between implementation and abstraction is required for preserving NI if execution is nondeterministic. Relative determinism allows us to relax this requirement into a simulation with extra properties. \\
 
 //Explanatory image here\\
 
 One critical importance of this change is it allows stronger abstractions feasible that wouldn't be feasible under bisimulations. This allows developers to keep only crucial details of the system and hide the ones that are implementation specific.\\
 
-//Example\\
+//Example
 
 \subsubsection*{Abstraction via layer system}
 Abstraction is an important tool to deal with large and complex software systems.
 It allows developers to hide implementation details of different modules of a software and purely think in terms of its observed behavior.
 
 Our layer system streamlines the abstraction of implementations by providing tools that makes defining a new DSL that exhibits the same behavior with the implementation easier.
-This is crucial in hiding details of functions that uses possibly interfering primitives in a noninterfering fashion. \\
+This is crucial in hiding details of functions that uses possibly interfering primitives in a noninterfering fashion.\\
 
 //Example\\
 
@@ -93,8 +99,10 @@ Once an implementation is abstracted away with a layer, it becomes completely op
 
 Since operations and state in a layer description is simpler than underlying implementation, it makes proving their noninterference simpler as well. On top of that, implementations under the layer can be changed without affecting other proofs in the system.
 
+Transformation of representation of a system state has the benefit of simplifying how system is modeled. For example, a file system can be abstracted as a partial mapping between filenames to file contents. Once properly abstracted, all the underliying complexities (e.g. inodes, log, block allocators etc.) becomes irrelevant to the system's behavior. This allows developers to define and prove simple confidentiality statements over simple representation. One example of this would be assigning an owner to each file vs. marking each inode and corresponding blocks to be owned by an owner and keeping track of this information through different stages of operations. Later may even be impossible if implementation does optimizations that fits multiple owners' data in a single data unit.
+
 \subsubsection*{NI Transfer via Simulation Proofs}
-It is known that, in general nondeterministic case, NI is not preserved under simulation, but under bisimulation. This creates a problem for abstraction techniques. Since bisimulation is a stricter requirement compared to simulation, amount of things abstraction can hide is reduced significantly. More specifically, you cannot introduce any new behavior or remove any existing behavior in abstraction. (*Explain this better*)
+It is known that, in general nondeterministic case, NI is not preserved under simulation, but under bisimulation. This creates a problem for abstraction techniques, which relies on simulation proofs to show implementation's behavior is a subset of abstract behavior. Since bisimulation is a stricter requirement compared to simulation, amount of details abstraction can hide is reduced significantly. More specifically, you cannot introduce any new behavior or remove any existing behavior in abstraction. (*Explain this better*)
 
 However we show that RDNI is preserved under simulations combined with some auxiliary properties. This relieves proof burden of the developer significantly as well as increases power of abstraction layers. Our layer system makes it possible to construct complex systems as isolated, self contained pieces; just like normal software systems.
 
@@ -102,24 +110,22 @@ However we show that RDNI is preserved under simulations combined with some auxi
 
 
 
-
-
+\begin{comment}
 
 \subsection*{System we consider}
 We are consider a storage system with a course-grained ownership. smallest data unit will be referred as a data block, Data are accessed with "a handle", which represents a group of data blocks. Each handle has an owner that is allowed to read and write data to it as well as transfer its ownership to another user.
 
 We are also assuming a crash-resistant transactional storage system where every API call is executed atomically. If a crash happens during an API call, then effects of the call either happens completely or doesn't happen at all.
 
-We assume system is running on a disk with asynchronious buffered writes. 
+We assume system is running on a disk with asynchronious buffered writes. Until an explicit sync operation is performeds, it is not guaranteed writes to be persisted on the disk. Ones that are persisted also could be out of order.
 
 \subsection*{Running example}
 Throughout the paper, we will follow the scenario where a user writes some data to a file and then transfers ownership of the file to another user.
-\begin{verbatim}
-	append_and_transfer(handle, data, new_owner) {
-		extend(handle, data)
-		change_owner(handle, new_owner)
-	}
-\end{verbatim}
+\begin{lstlisting}
+append_and_transfer(handle, data, new_owner)
+  extend(handle, data)
+  change_owner(handle, new_owner)
+\end{lstlisting}
 Example is simple enough to not have any distracting details but complex enough to reveal subtleties involved in a possibly malicious storage system implementation.\\
 
 Possible problems that can arise in implementation of write:
@@ -149,7 +155,7 @@ This place will be referred as "the stash" and the action of hiding data there a
 
 - Revealing data contents via different crash-and-recovery outcomes.
 
-
+\end{comment}
 
 
 %Just like functionality of systems can be precisely defined in terms of specifications, desired properties of those systems can be precisely defined in terms of system properties. A class of these properties that encompasses security and liveness is called hyperproperties. Unlike properties that depends on single run of a system, hyperproperties relate multiple runs of a system. Because of this distinction, hyperproperties of a system are harder to prove and are not preserved under simulation based refinement. A strong notion of simulation called bisimulation is required to preserve hyperproperties. However bisimulation requirement reduces the power of abstraction significantly.
