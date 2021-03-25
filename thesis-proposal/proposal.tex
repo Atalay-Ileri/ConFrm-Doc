@@ -11,20 +11,19 @@
 \maketitle
 
 \subsection*{Introduction}
-Absence of bugs were and still is the main focus of formal verification. There are many proof techniques and frameworks developed to ensure that programs do what they are supposed to do (i.e. functionally correct). However, dual of this notion is also equally important: programs shouldn't do something they shouldn't do (i.e. safe). Thanks to the widespread usage of open source and collaborative software projects, this requirement is more important than ever. Most of time, it takes one malicious program to compromise integrity of an entire system.
+Absence of bugs were and still are the main focus of formal verification. Many proof techniques and frameworks exist to ensure programs are functionally correct–they do what they are supposed to do. Yet, the opposite is also equally important, as programs should not function in ways they are not meant to. Due to the widespread usage of open source and collaborative software projects, this requirement is more important than ever. It can take only a single malicious program to compromise the integrity of an entire system. 
 
-Even though the criticality of this notion is indisputable, most of the time, it is disregarded by the users. Users treat developers with a good faith, while a single malicious developer could have catastrophic effect on many systems.
+Though the significance of this notion is indisputable, it is often disregarded by users. Users assume developers act in good faith, but a single ill-intentioned developer {\color{red}(is there another word you could use here?)} could induce a catastrophic effect on a multitude of systems.
 
-Despite its importance, this notion of safety received much less attention from research community. Some works on this area includes {\color{red} [citations here]}. Most of these works work with a strict information flow policies that does not allow discretionary access control. {\color{red}DISKSEC} uses a relaxed notion that allows disclosure of certain data and metadata. However it has serious limitations that includes weaker guarantees for nondeterministic executions and inability to handle confidential data based control flow.
+Despite its importance, this notion of safety received much less attention from research community. Some works on this area include [citations here]. Most of these studies work with strict information flow policies that do not allow discretionary access control. DISKSEC uses a relaxed notion that allows disclosure of certain data and metadata. Unfortunately, it has serious limitations that include weaker guarantees for nondeterministic executions, as well as the inability to handle confidential data based control flow. 
 
-These works also do not provide clear abstraction layers that enables modularity while preserving safety. (*I need to verify this. It is a bold claim. Can extend on this if it is true. *)
+These works also do not provide clear abstraction layers that enable modularity while preserving safety. (*I need to verify this. It is a bold claim. Can extend on this if it is true. *) 
 
-Our presented solution to above problems is ConFrm, a framework for implementing and proving confidentiality of storage systems in a modular fashion. ConFrm facilitates a noninterference definition with better guarantees for nondeterministic behavior and provides required tools and necessary conditions for safety preserving abstractions. These two components of ConFrm enables us to overcome limitations of previous works and provide a simple yet powerful tool for implementing safe storage systems.
+Our proposed solution to above problems is ConFrm, a framework for implementing and proving the confidentiality of storage systems in a modular fashion. ConFrm facilitates a noninterference definition with better guarantees for nondeterministic behavior, and provides the required tools and necessary conditions for safety preserving abstractions. These two components of ConFrm enable us to overcome the limitations of previous works and provide a simple yet powerful tool for implementing safe storage systems. 
 
-To test the capabilities of ConFrm, We implemented ConFS, a confidential file system that is crash resistance via checksum logging, transactional operations and coarse-grained discretionary access control.
+To test the capabilities of ConFrm, we implemented ConFS, a confidential file system that is crash resistant via checksum logging, transactional operations and coarse-grained discretionary access control. 
 
-Both ConFrm and ConFS are implemented in Coq. Proofs are fully machine checked to ensure their correctness.
-
+Both ConFrm and ConFS are implemented in Coq. Proofs are fully machine checked to ensure their correctness. 
 
 
 
@@ -32,7 +31,8 @@ Both ConFrm and ConFS are implemented in Coq. Proofs are fully machine checked t
 
 \subsection*{Problems and Motivation}
 \paragraph{Unsafety from Frequency}
-We are trying to tackle two problems in this work. First problem is the interaction between nondeterminism and noninterference. More particularly, standard noninterference definition fails to address leakages that is resulted from different frequencies of possible execution traces of the same program. A simple example of this weakness can be seen below:
+We are trying to tackle two problems in this work. First issue is the interaction between nondeterminism and noninterference. More specifically, standard noninterference definition fail to address leakages that resulted from different frequencies of possible execution traces of the same program. A simple example of this weakness can be seen below: 
+
 
 \begin{lstlisting}
 if (random_bit() == 1)
@@ -41,8 +41,7 @@ else
   return random_bit()
 \end{lstlisting}
 
-This code leaks the secret bit 50\% of the time and outputs a random bit 50\% of the time.
-Although above program satisfies NI definition, secret bit can be determined via the observed frequency of repeated calls.\\
+This code leaks the secret bit 50\% of the time and outputs a random bit 50\% of the time. Although the above program satisfies the NI definition, the secret bit can be determined via the observed frequency of repeated calls. \\
 
 \begin{tabular}{| c | c | c |}
 	\hline
@@ -55,9 +54,10 @@ Although above program satisfies NI definition, secret bit can be determined via
 \end{tabular}\\
  
 \paragraph{Unsafe Primitives}
-Second problem is using potentially unsafe primitives in an implementation. Many storage systems processes the data provided to them before storing it. This sometimes includes making decisions based on the contents of the data. A potentially malicious developer can take advantage of this capability to leak information.
+The second problem observed involves using potentially unsafe primitives in implementation. Many storage systems process the data provided to them before storing it, which sometimes includes making decisions based on the contents of the data. A potentially malicious developer can take advantage of this capability to leak information. 
 
-One classic example of this is data deduplication. Deduplication requires branching on a confidential data, which can be abused if not careful. Here is a trivial deduplication example that can leak data:
+One classic example of this is data deduplication. Deduplication requires branching on confidential data, which can be abused if not handled carefully. One instance we can use to illustrate this point is:
+
 
 \begin{lstlisting}
 write_to_txn(v)
@@ -68,12 +68,13 @@ write_to_txn(v)
     return true
 \end{lstlisting}
 
-This implementation allows an adversary to query the contents of the transaction. Although it may be appealing to prohibit such behaviors to ensure code is safe, it is a very constraining approach which eliminates many possible efficient implementations. Ideal solution would be finding a way to restrict their unsafe usage.
+This implementation allows an adversary to query the contents of the transaction. Although it may be appealing to prohibit such behaviors to ensure the code is safe, it is a very constraining approach which eliminates many possible efficient implementations. An ideal solution may involve figuring out a method to restrict unsafe utilization. 
 
-In deduplication example, it is still possible to do it safely by deduplicating just before committing the transaction. Such a deferred deduplication will still branch on confidential data but without revealing it it.
+It is still possible to deduplicate safely by performing the process after the  transaction is finalized but before committing it. Such a deferred deduplication will still branch on confidential data without revealing it.
+
 
 \paragraph{Scalability}
-We aim to solve above problems while providing scalability. Any technique that will be used in large scale projects require to support modularity, compositionality, expressive power and interoperability with other techniques. Provided solution should not constrain the developer to certain proof technique for proving safety, as well as, allow him to model systems he is working on to the desired detail.
+We aim to solve above problems while providing scalability. Any technique that will be used in large scale projects is required to support modularity, compositionality, expressive power, and interoperability with other techniques. Provided solution should not constrain developers to a certain proof technique for proving safety, as well as allow them to model systems they are working on to the desired level of detail. 
 
 \subsection*{Solution Approach}
 To address the problems stated above, we used 3 approaches:\\
@@ -82,7 +83,7 @@ To address the problems stated above, we used 3 approaches:\\
 - Property transfer via simulation proofs.
 
 \subsubsection*{Quantification of Nondeterminism}
-This approach have two benefits. First and most important one is that it enables us to
+This approach have two benefits. First and most significant, it enables us to
 turn nondeterministic executions into relatively deterministic ones. 
 Relatively deterministic execution is defined as an execution trace that is deterministic given a particular sequence of nondeterministic choices.\\
 
@@ -94,33 +95,33 @@ This method is implemented via tokens, an inductive data type that is provided t
 
 With this modified definition, we managed to state and prove a stronger version of noninterference: relatively deterministic noninterference (RDNI). RDNI requires that for any sequence of nondeterministic choices, if there is a completed execution of a program from a state, there exists another execution of the same program* from a related state with same choice sequence. Our definition is termination sensitive.
 
-RDNI's requirement for matching execution from any choice sequence ensures that no matter which nondeterministic branch is followed during the execution, there will be an equivalent execution from an equivalent state. This one-to-one correspondence implies that a state cannot be distinguished based on repeated observation of the system.
+RDNI's requirement for matching execution from any choice sequence ensures that no matter which nondeterministic branch is followed during the execution, there will be an indistinguishable execution from an equivalent state. This one-to-one correspondence implies that a state cannot be distinguished based on repeated observation of the system.
 
-Second benefit of quantification is that it allowed us to weaken the requirement for NI preserving refinements. It is known that a bisimulation between implementation and abstraction is required for preserving NI if execution is nondeterministic. Relative determinism allows us to relax this requirement into a simulation with extra properties. \\
+Another benefit of quantification is that it allows us to weaken the requirements for NI preserving refinements. It is known that a bisimulation between implementation and abstraction is necessary for preserving NI if execution is nondeterministic. Relative determinism enables us to relax this requirement into a simulation with extra properties. \\
 
 //Explanatory image here\\
 
-One critical importance of this change is it allows stronger abstractions feasible that wouldn't be feasible under bisimulations. This allows developers to keep only crucial details of the system and hide the ones that are implementation specific.\\
+One critical facet of this alteration is that it permits stronger abstractions that would not be feasible under bisimulations, allowing developers to keep visible only the crucial details of a system, while concealing the ones that are implementation specific.\\
 
 //Example
 
 \subsubsection*{Abstraction via layer system}
-Abstraction is an important tool to deal with large and complex software systems.
+Abstraction is a useful tool when dealing with large and complex software systems.
 It allows developers to hide implementation details of different modules of a software and purely think in terms of its observed behavior.
 
 Our layer system streamlines the abstraction of implementations by providing tools that makes defining a new DSL that exhibits the same behavior with the implementation easier.
-This is crucial in hiding details of functions that uses possibly interfering primitives in a noninterfering fashion.\\
+This is crucial in hiding the details of functions that use potentially unsafe primitives in a noninterfering fashion.\\
 
 //Example\\
 
-Once an implementation is abstracted away with a layer, it becomes completely opaque to the rest of the system. Our system guarantees that any implementation of a noninterfering layer that simulates it is also noninterfering.
+Once an implementation is abstracted away with a layer, it becomes completely opaque to the rest of the system. Our system guarantees that an implementation that simulates a noninterfering layer is also noninterfering.
 
-Since operations and state in a layer description is simpler than underlying implementation, it makes proving their noninterference simpler as well. On top of that, implementations under the layer can be changed without affecting other proofs in the system.
+Because the operations and state of a layer description are simpler than its underlying implementation, proving their noninterference becomes less complex as well. Additionally, implementations under the layer can be changed without affecting other proofs in the system.
 
-Transformation of representation of a system state has the benefit of simplifying how system is modeled. For example, a file system can be abstracted as a partial mapping between filenames to file contents. Once properly abstracted, all the underliying complexities (e.g. inodes, log, block allocators etc.) becomes irrelevant to the system's behavior. This allows developers to define and prove simple confidentiality statements over simple representation. One example of this would be assigning an owner to each file vs. marking each inode and corresponding blocks to be owned by an owner and keeping track of this information through different stages of operations. Later may even be impossible if implementation does optimizations that fits multiple owners' data in a single data unit.
+Transforming the representation of a system state has the benefit of simplifying how system is modeled. For example, a file system can be abstracted as a partial mapping between file names to file contents. Once properly abstracted, all the underliying complexities (e.g. inodes, log, block allocators etc.) becomes irrelevant to the system's behavior. This allows developers to define and prove simple confidentiality statements over simple representation. For instance, assigning an owner to each file is much more straightforward than designating each inode and data blocks to an owner, and subsequently keeping track of the information through varying stages of operations. This technique may even be impossible if implementation does optimizations that fit multiple owners' data in a single data unit (e.g. a disk block).
 
 \subsubsection*{NI Transfer via Simulation Proofs}
-It is known that, in general nondeterministic case, NI is not preserved under simulation, but under bisimulation. This creates a problem for abstraction techniques, which relies on simulation proofs to show implementation's behavior is a subset of abstract behavior. Since bisimulation is a stricter requirement compared to simulation, amount of details abstraction can hide is reduced significantly. More specifically, you cannot introduce any new behavior or remove any existing behavior in abstraction. (*Explain this better*)
+It is known that, in general nondeterministic case, NI is not preserved under simulation, but under bisimulation. This creates a problem for abstraction techniques, which relies on simulation proofs to show the behavior of implementation is a subset of the abstractraction's. Since bisimulation is a stricter requirement than simulation, the amount of details an abstraction can omit is significantly reduced. Furthermore, you cannot introduce any new behavior or remove any existing behavior in an abstraction. (*Explain this better*)
 
 However we show that RDNI is preserved under simulations combined with some auxiliary properties. This relieves proof burden of the developer significantly as well as increases power of abstraction layers. Our layer system makes it possible to construct complex systems as isolated, self contained pieces; just like normal software systems.
 
