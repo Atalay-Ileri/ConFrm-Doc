@@ -15,6 +15,13 @@ Absence of bugs were and still are the main focus of formal verification. Many p
 
 Though the significance of this notion is indisputable, it is often disregarded by users. Users assume developers act in good faith, but a single ill-intentioned developer {\color{red}(is there another word you could use here?)} could induce a catastrophic effect on a multitude of systems.
 
+%FK: the transition between the first two paragraphs and the next one
+%awkward.  how is ConFrm fixing the problem identified in the first
+%two paragraphs.  the first two appear to talk about security in
+%general, which seems to get a ton of attention, and is not
+%disregarded.  I think you have something specific in mind in the
+%first two paragraphs, but I don't know what.
+
 Despite its importance, this notion of safety received much less attention from research community. Some works on this area include [citations here]. Most of these studies work with strict information flow policies that do not allow discretionary access control. DISKSEC uses a relaxed notion that allows disclosure of certain data and metadata. Unfortunately, it has serious limitations that include weaker guarantees for nondeterministic executions, as well as the inability to handle confidential data based control flow. 
 
 These works also do not provide clear abstraction layers that enable modularity while preserving safety. (*I need to verify this. It is a bold claim. Can extend on this if it is true. *) 
@@ -27,7 +34,13 @@ Both ConFrm and ConFS are implemented in Coq. Proofs are fully machine checked t
 
 
 
-%Nickolai: a good starting point might be to articulate what problem you are trying to solve and what your approach / design for addressing that problem looks like.  so, something along the lines of the goal and design sections.
+%Nickolai: a good starting point might be to articulate what problem
+%you are trying to solve and what your approach / design for
+%addressing that problem looks like.  so, something along the lines of
+%the goal and design sections.
+
+%FK: it would be good to explain in intro or next section the
+%challenge of nailing down a spec because it must limit an adversarial implementation.
 
 \subsection*{Problems and Motivation}
 \paragraph{Unsafety from Frequency}
@@ -42,6 +55,9 @@ else
 \end{lstlisting}
 
 This code leaks the secret bit 50\% of the time and outputs a random bit 50\% of the time. Although the above program satisfies the NI definition, the secret bit can be determined via the observed frequency of repeated calls. \\
+
+%FK: it would good to explain why this example above satisfies NI
+%definition (and give the NI definition)
 
 \begin{tabular}{| c | c | c |}
 	\hline
@@ -70,11 +86,20 @@ write_to_txn(v)
 
 This implementation allows an adversary to query the contents of the transaction. Although it may be appealing to prohibit such behaviors to ensure the code is safe, it is a very constraining approach which eliminates many possible efficient implementations. An ideal solution may involve figuring out a method to restrict unsafe utilization. 
 
+%FK utilization -> primitive (above)
+% how could you prohibit such behaviors? before shooting down the
+% strawman solution, it would be good to explain it first.
+
 It is still possible to deduplicate safely by performing the process after the  transaction is finalized but before committing it. Such a deferred deduplication will still branch on confidential data without revealing it.
 
+%FK Is the last paragraph the general solution to handling unsafe primitives?
 
 \paragraph{Scalability}
 We aim to solve above problems while providing scalability. Any technique that will be used in large scale projects is required to support modularity, compositionality, expressive power, and interoperability with other techniques. Provided solution should not constrain developers to a certain proof technique for proving safety, as well as allow them to model systems they are working on to the desired level of detail. 
+
+%FK: I don't understand what scalability is from the above
+%paragraph. Could you give a concrete example as you did for the other
+%two challenges?
 
 \subsection*{Solution Approach}
 To address the problems stated above, we used 3 approaches:\\
@@ -82,12 +107,20 @@ To address the problems stated above, we used 3 approaches:\\
 - Abstraction via layer system.\\
 - Property transfer via simulation proofs.
 
+%FK: do the 3 approaches line up with the 3 problems in the previous section?
+
 \subsubsection*{Quantification of Nondeterminism}
+
+%FK: first describe/outlines what this approach is.
+
 This approach have two benefits. First and most significant, it enables us to
 turn nondeterministic executions into relatively deterministic ones. 
 Relatively deterministic execution is defined as an execution trace that is deterministic given a particular sequence of nondeterministic choices.\\
 
 //EXAMPLE\\
+
+%FK: it would be great to have the examples; now I have a difficult
+%time understanding the current text.
 
 This method is implemented via tokens, an inductive data type that is provided to execution relation. Each token represents a particular nondeterministic choice (e. g. should execution continue or crash?). In some particular cases, they even act like wrappers for a list of tokens themselves. In other words, a token is a unit of nondeterminism that is required to execute a single step.\\
 
