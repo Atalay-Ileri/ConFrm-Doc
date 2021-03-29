@@ -15,12 +15,12 @@ Absence of bugs were and still are the main focus of formal verification. Many p
 
 Though the significance of this notion is indisputable, it is often disregarded by users. Users assume developers act in good faith, but a single ill-intentioned developer {\color{red}(is there another word you could use here?)} could induce a catastrophic effect on a multitude of systems.
 
-%FK: the transition between the first two paragraphs and the next one
-%awkward.  how is ConFrm fixing the problem identified in the first
-%two paragraphs.  the first two appear to talk about security in
-%general, which seems to get a ton of attention, and is not
-%disregarded.  I think you have something specific in mind in the
-%first two paragraphs, but I don't know what.
+% FK: the transition between the first two paragraphs and the next one
+% awkward.  how is ConFrm fixing the problem identified in the first
+% two paragraphs.  the first two appear to talk about security in
+% general, which seems to get a ton of attention, and is not
+% disregarded.  I think you have something specific in mind in the
+% first two paragraphs, but I don't know what.
 
 Despite its importance, this notion of safety received much less attention from research community. Some works on this area include [citations here]. Most of these studies work with strict information flow policies that do not allow discretionary access control. DISKSEC uses a relaxed notion that allows disclosure of certain data and metadata. Unfortunately, it has serious limitations that include weaker guarantees for nondeterministic executions, as well as the inability to handle confidential data based control flow. 
 
@@ -32,15 +32,9 @@ To test the capabilities of ConFrm, we implemented ConFS, a confidential file sy
 
 Both ConFrm and ConFS are implemented in Coq. Proofs are fully machine checked to ensure their correctness. 
 
-
-
-%Nickolai: a good starting point might be to articulate what problem
-%you are trying to solve and what your approach / design for
-%addressing that problem looks like.  so, something along the lines of
-%the goal and design sections.
-
-%FK: it would be good to explain in intro or next section the
-%challenge of nailing down a spec because it must limit an adversarial implementation.
+% FK: it would be good to explain in intro or next section the
+% challenge of nailing down a spec because 
+% it must limit an adversarial implementation.
 
 \subsection*{Problems and Motivation}
 \paragraph{Unsafety from Frequency}
@@ -48,16 +42,59 @@ We are trying to tackle two problems in this work. First issue is the interactio
 
 
 \begin{lstlisting}
-if (random_bit() == 1)
+if (random_bit() = = 1)
   return secret_bit
 else
   return random_bit()
 \end{lstlisting}
 
-This code leaks the secret bit 50\% of the time and outputs a random bit 50\% of the time. Although the above program satisfies the NI definition, the secret bit can be determined via the observed frequency of repeated calls. \\
+This code leaks the secret bit 50\% of the time and outputs a random bit 50\% of the time. It is also important to note that it can output 0 or 1 independent of the secret value. This way, any (state, return) pair represents a successful execution. 
 
-%FK: it would good to explain why this example above satisfies NI
-%definition (and give the NI definition)
+% Done - FK: it would good to explain why this example above satisfies NI
+% definition (and give the NI definition)
+
+//Write a transition here or move NI definition to somewhere else
+
+% \paragraph{Nondeterministic Noninterference}
+
+\begin{lstlisting}
+forall p s1 s2 s1r v,
+  equivalent s1 s2 ->
+  exec s1 p s1r v ->
+	
+  exists s2r,
+    exec s2 p s2r v /\
+    equivalent s1r s2r.
+\end{lstlisting} 
+
+Let's say that two states are equivalent if they are the same for their non-secret parts. Since any pair of state an return value is a valid execution, you can find another execution from a related state. This makes it satisfy NI definition.
+
+\begin{comment}
+Here is a table for all possible ways an execution of above function could go:\\
+
+\begin{tabular}{| c | c | c | c | c |}
+	\hline
+	 & Secret Bit & First Random Bit & Output & Noninterfering Execution \\
+	\hline
+	a &	0 & 0 & 0 & d \\
+	\hline
+	b &	0 & 0 & 1 & e \\
+	\hline
+	c &	0 & 1 & 0 & d \\
+	\hline
+	\hline
+	d &	1 & 0 & 0 & a \\
+	\hline
+	e &	1 & 0 & 1 & b \\
+	\hline
+	f &	1 & 1 & 1 & b \\
+	\hline
+\end{tabular}\\
+
+For each state and an execution from it, there is a corresponding execution from each related state with same return value. If a related state has same secret bit value, first execution is also the second execution. If a related state has opposite secret bit value, then corresponding execution is given in the above table. This demonstrates how given code snippet satisfies NI.
+\end{comment}
+
+Although the above program satisfies the NI definition, the secret bit can be determined via the observed frequency of repeated calls. When we look at the frequencies of output values, we can see that they correlate with the value of the secret bit.\\
 
 \begin{tabular}{| c | c | c |}
 	\hline
@@ -68,31 +105,40 @@ This code leaks the secret bit 50\% of the time and outputs a random bit 50\% of
 	1 &	25\% & 75\% \\
 	\hline
 \end{tabular}\\
+
+//write a conclusion before moving to the next problem.
  
 \paragraph{Unsafe Primitives}
 The second problem observed involves using potentially unsafe primitives in implementation. Many storage systems process the data provided to them before storing it, which sometimes includes making decisions based on the contents of the data. A potentially malicious developer can take advantage of this capability to leak information. 
 
 One classic example of this is data deduplication. Deduplication requires branching on confidential data, which can be abused if not handled carefully. One instance we can use to illustrate this point is:
 
-
 \begin{lstlisting}
 write_to_txn(v)
-  if (v in txn)
+  if (v is in txn)
     return false
   else
     add_to_txn(v)
     return true
 \end{lstlisting}
 
-This implementation allows an adversary to query the contents of the transaction. Although it may be appealing to prohibit such behaviors to ensure the code is safe, it is a very constraining approach which eliminates many possible efficient implementations. An ideal solution may involve figuring out a method to restrict unsafe utilization. 
+This implementation allows an adversary to query the contents of the transaction. 
+A simple solution that can be considered to solve this problem is prohibiting usage unsafe operations 
+by forcing a deep embedded language that doesn't have an operation to compare secret data or treating secret
+data as an abstract object that can't be compared. Such approaches has the advantage 
+that any program written in such a language is noninterfering by construction.
 
-%FK utilization -> primitive (above)
+Although it may be appealing to prohibit such operations to ensure the code is safe, it is a very constraining approach which eliminates many possible efficient implementations. It would certainly makes it impossible to implement data deduplication. 
+
+However, It is possible to implement a safe deduplicator. One way would be performing the process after the transaction is finalized but before committing it. Such a deferred deduplication will still branch on confidential data without revealing it.
+
+An ideal solution would prohibit unsafe implementations that uses the primitive while allowing the safe ones. 
+
+% Done - FK utilization -> primitive (above)
 % how could you prohibit such behaviors? before shooting down the
-% strawman solution, it would be good to explain it first.
+% strawman solution, it would be good to explain it first. 
 
-It is still possible to deduplicate safely by performing the process after the  transaction is finalized but before committing it. Such a deferred deduplication will still branch on confidential data without revealing it.
-
-%FK Is the last paragraph the general solution to handling unsafe primitives?
+% Done - FK Is the last paragraph the general solution to handling unsafe primitives? 
 
 \paragraph{Scalability}
 We aim to solve above problems while providing scalability. Any technique that will be used in large scale projects is required to support modularity, compositionality, expressive power, and interoperability with other techniques. Provided solution should not constrain developers to a certain proof technique for proving safety, as well as allow them to model systems they are working on to the desired level of detail. 
@@ -115,16 +161,32 @@ To address the problems stated above, we used 3 approaches:\\
 
 This approach have two benefits. First and most significant, it enables us to
 turn nondeterministic executions into relatively deterministic ones. 
-Relatively deterministic execution is defined as an execution trace that is deterministic given a particular sequence of nondeterministic choices.\\
+Relatively deterministic execution is defined as an execution trace that is 
+deterministic given a particular sequence of nondeterministic choices.\\
 
-//EXAMPLE\\
+A simple example of this is execution of an operation that generates an encryption key. 
+A nondeterministic execution rule would be
 
-%FK: it would be great to have the examples; now I have a difficult
-%time understanding the current text.
+"forall s key, s --generate\_key-- (s, key)". 
 
-This method is implemented via tokens, an inductive data type that is provided to execution relation. Each token represents a particular nondeterministic choice (e. g. should execution continue or crash?). In some particular cases, they even act like wrappers for a list of tokens themselves. In other words, a token is a unit of nondeterminism that is required to execute a single step.\\
+This rule states that when we run generate\_key we can get any key as a result of the execution.
 
-//EXAMPLE\\
+A relatively deterministic execution rule would be
+
+"forall s key, s --[key]generate\_key-- (s, key)".
+
+Difference between this rule and the previous one is subtle but crucial. 
+According to this rule, there is only one possible key you can get when you execute generate\_key in this specific conditions.
+
+In some sense, it can be thought as which key you will get is predetermined by the state of the world. Your execution is deterministic relative to the state of the world.
+In contrast, you could get any key in the nondeterministic execution regardless of the state of the world.
+
+% I hope we won't have to engage in any discussion about deterministic vs nondeterministic universe with reviewers.
+% Philosophical implications of this work is out of scope for the paper.
+
+% Done - FK: it would be great to have the examples; now I have a difficult
+% time understanding the current text.
+
 
 With this modified definition, we managed to state and prove a stronger version of noninterference: relatively deterministic noninterference (RDNI). RDNI requires that for any sequence of nondeterministic choices, if there is a completed execution of a program from a state, there exists another execution of the same program* from a related state with same choice sequence. Our definition is termination sensitive.
 
@@ -137,6 +199,13 @@ Another benefit of quantification is that it allows us to weaken the requirement
 One critical facet of this alteration is that it permits stronger abstractions that would not be feasible under bisimulations, allowing developers to keep visible only the crucial details of a system, while concealing the ones that are implementation specific.\\
 
 //Example
+
+
+% AI - This felt out of place here but probably should be somewhere else.
+%This method is implemented via tokens, an inductive data type that is provided to execution relation. Each token represents a particular nondeterministic choice (e.g. should execution continue or crash?). In some particular cases, they even act like wrappers for a list of tokens themselves. In other words, a token is a unit of nondeterminism that is required to execute a single step.\\
+
+%//EXAMPLE\\
+
 
 \subsubsection*{Abstraction via layer system}
 Abstraction is a useful tool when dealing with large and complex software systems.
