@@ -1,0 +1,35 @@
+\begin{figure}
+	\centering 
+% https://q.uiver.app/?q=WzAsOCxbMCwxLCJpXzEiXSxbMiwxLCJpXzIiXSxbMCwwLCJhXzEiXSxbNCwxLCJpXzEiXSxbNiwxLCJpXzIiXSxbNCwwLCJhXzEiXSxbNiwwLCJhXzIiXSxbMiwwLCJhXzIiXSxbMCwyLCJSIiwxXSxbMyw1LCJSIiwxXSxbMyw0LCJSKEUpIiwxLHsibGV2ZWwiOjIsInN0eWxlIjp7ImhlYWQiOnsibmFtZSI6Im5vbmUifX19XSxbNCw2LCJSIiwxXSxbNSw2LCJFIiwxLHsibGV2ZWwiOjIsInN0eWxlIjp7ImhlYWQiOnsibmFtZSI6Im5vbmUifX19XSxbMSw3LCIiLDEseyJzdHlsZSI6eyJib2R5Ijp7Im5hbWUiOiJub25lIn0sImhlYWQiOnsibmFtZSI6Im5vbmUifX19XSxbMSw3LCJSIiwxXSxbMiw3LCJFIiwxLHsibGV2ZWwiOjIsInN0eWxlIjp7ImhlYWQiOnsibmFtZSI6Im5vbmUifX19XSxbMTMsOSwiIiwxLHsic2hvcnRlbiI6eyJzb3VyY2UiOjMwLCJ0YXJnZXQiOjMwfX1dXQ==
+\begin{subfigure}[b]{0.5\textwidth}
+\begin{tikzcd}%
+	{a_1} && {a_2} && {a_1} && {a_2} \\
+	{i_1} && {i_2} && {i_1} && {i_2}
+	\arrow["R"{description}, from=2-1, to=1-1]
+	\arrow[""{name=0, anchor=center, inner sep=0}, "R"{description}, from=2-5, to=1-5]
+	\arrow["{R(E)}"{description}, Rightarrow, no head, from=2-5, to=2-7]
+	\arrow["R"{description}, from=2-7, to=1-7]
+	\arrow["E"{description}, Rightarrow, no head, from=1-5, to=1-7]
+	\arrow[""{name=1, anchor=center, inner sep=0}, draw=none, from=2-3, to=1-3]
+	\arrow["R"{description}, from=2-3, to=1-3]
+	\arrow["E"{description}, Rightarrow, no head, from=1-1, to=1-3]
+	\arrow[shorten <=19pt, shorten >=19pt, Rightarrow, from=1, to=0]
+\end{tikzcd}
+\end{subfigure}
+\hfill
+% https://q.uiver.app/?q=WzAsNyxbMCwxLCJpXzEiXSxbMiwxLCJpXzIiXSxbNCwxLCJpXzEiXSxbNiwxLCJpXzIiXSxbNCwwLCJhXzEiXSxbNiwwLCJhXzIiXSxbMiwwXSxbMiw0LCJSIiwxXSxbMiwzLCJSKEUpIiwxLHsibGV2ZWwiOjIsInN0eWxlIjp7ImhlYWQiOnsibmFtZSI6Im5vbmUifX19XSxbMyw1LCJSIiwxXSxbNCw1LCJFIiwxLHsibGV2ZWwiOjIsInN0eWxlIjp7ImhlYWQiOnsibmFtZSI6Im5vbmUifX19XSxbMCwxLCJSKEUpIiwxLHsibGV2ZWwiOjIsInN0eWxlIjp7ImhlYWQiOnsibmFtZSI6Im5vbmUifX19XSxbMSw2LCIiLDEseyJzdHlsZSI6eyJib2R5Ijp7Im5hbWUiOiJub25lIn0sImhlYWQiOnsibmFtZSI6Im5vbmUifX19XSxbMTIsNywiIiwxLHsic2hvcnRlbiI6eyJzb3VyY2UiOjMwLCJ0YXJnZXQiOjMwfX1dXQ==
+\begin{subfigure}[b]{0.5\textwidth}
+\begin{tikzcd}%
+	&& {} && {a_1} && {a_2} \\
+	{i_1} && {i_2} && {i_1} && {i_2}
+	\arrow[""{name=0, anchor=center, inner sep=0}, "R"{description}, from=2-5, to=1-5]
+	\arrow["{R(E)}"{description}, Rightarrow, no head, from=2-5, to=2-7]
+	\arrow["R"{description}, from=2-7, to=1-7]
+	\arrow["E"{description}, Rightarrow, no head, from=1-5, to=1-7]
+	\arrow["{R(E)}"{description}, Rightarrow, no head, from=2-1, to=2-3]
+	\arrow[""{name=1, anchor=center, inner sep=0}, draw=none, from=2-3, to=1-3]
+	\arrow[shorten <=19pt, shorten >=19pt, Rightarrow, from=1, to=0]
+\end{tikzcd}
+\end{subfigure}
+\caption{Two directions of derived equivalence relation for the implementation from abstraction's equivalence relation E}
+\end{figure}

@@ -3,233 +3,22 @@
 \usepackage{color}
 \usepackage{listings}
 \usepackage{verbatim}
+\usepackage{quiver}
+\usepackage{caption}
+\usepackage{subcaption}
+
 \newcolumntype{L}{>{\raggedright\arraybackslash}X}
 
 \title{ConFrm: Confidentiality Framework for Crash Safe Storage Systems}
 \author{Atalay Mert Ileri \and Frans Kaashoek \and Nickolai Zeldovich}
+
 \begin{document}
 \maketitle
-
-\subsection*{Introduction}
-Absence of bugs were and still are the main focus of formal verification. Many proof techniques and frameworks exist to ensure programs are functionally correct–they do what they are supposed to do. Yet, the opposite is also equally important, as programs should not function in ways they are not meant to. Due to the widespread usage of open source and collaborative software projects, this requirement is more important than ever. It can take only a single malicious program to compromise the integrity of an entire system. 
-
-Though the significance of this notion is indisputable, it is often disregarded by users. Users assume developers act in good faith, but a single ill-intentioned developer {\color{red}(is there another word you could use here?)} could induce a catastrophic effect on a multitude of systems.
-
-% FK: the transition between the first two paragraphs and the next one
-% awkward.  how is ConFrm fixing the problem identified in the first
-% two paragraphs.  the first two appear to talk about security in
-% general, which seems to get a ton of attention, and is not
-% disregarded.  I think you have something specific in mind in the
-% first two paragraphs, but I don't know what.
-
-Despite its importance, this notion of safety received much less attention from research community. Some works on this area include [citations here]. Most of these studies work with strict information flow policies that do not allow discretionary access control. DISKSEC uses a relaxed notion that allows disclosure of certain data and metadata. Unfortunately, it has serious limitations that include weaker guarantees for nondeterministic executions, as well as the inability to handle confidential data based control flow. 
-
-These works also do not provide clear abstraction layers that enable modularity while preserving safety. (*I need to verify this. It is a bold claim. Can extend on this if it is true. *) 
-
-Our proposed solution to above problems is ConFrm, a framework for implementing and proving the confidentiality of storage systems in a modular fashion. ConFrm facilitates a noninterference definition with better guarantees for nondeterministic behavior, and provides the required tools and necessary conditions for safety preserving abstractions. These two components of ConFrm enable us to overcome the limitations of previous works and provide a simple yet powerful tool for implementing safe storage systems. 
-
-To test the capabilities of ConFrm, we implemented ConFS, a confidential file system that is crash resistant via checksum logging, transactional operations and coarse-grained discretionary access control. 
-
-Both ConFrm and ConFS are implemented in Coq. Proofs are fully machine checked to ensure their correctness. 
-
-% FK: it would be good to explain in intro or next section the
-% challenge of nailing down a spec because 
-% it must limit an adversarial implementation.
-
-\subsection*{Problems and Motivation}
-\paragraph{Unsafety from Frequency}
-We are trying to tackle two problems in this work. First issue is the interaction between nondeterminism and noninterference. More specifically, standard noninterference definition fail to address leakages that resulted from different frequencies of possible execution traces of the same program. A simple example of this weakness can be seen below: 
-
-
-\begin{lstlisting}
-if (random_bit() = = 1)
-  return secret_bit
-else
-  return random_bit()
-\end{lstlisting}
-
-This code leaks the secret bit 50\% of the time and outputs a random bit 50\% of the time. It is also important to note that it can output 0 or 1 independent of the secret value. This way, any (state, return) pair represents a successful execution. 
-
-% Done - FK: it would good to explain why this example above satisfies NI
-% definition (and give the NI definition)
-
-//Write a transition here or move NI definition to somewhere else
-
-% \paragraph{Nondeterministic Noninterference}
-
-\begin{lstlisting}
-forall p s1 s2 s1r v,
-  equivalent s1 s2 ->
-  exec s1 p s1r v ->
-	
-  exists s2r,
-    exec s2 p s2r v /\
-    equivalent s1r s2r.
-\end{lstlisting} 
-
-Let's say that two states are equivalent if they are the same for their non-secret parts. Since any pair of state an return value is a valid execution, you can find another execution from a related state. This makes it satisfy NI definition.
-
-\begin{comment}
-Here is a table for all possible ways an execution of above function could go:\\
-
-\begin{tabular}{| c | c | c | c | c |}
-	\hline
-	 & Secret Bit & First Random Bit & Output & Noninterfering Execution \\
-	\hline
-	a &	0 & 0 & 0 & d \\
-	\hline
-	b &	0 & 0 & 1 & e \\
-	\hline
-	c &	0 & 1 & 0 & d \\
-	\hline
-	\hline
-	d &	1 & 0 & 0 & a \\
-	\hline
-	e &	1 & 0 & 1 & b \\
-	\hline
-	f &	1 & 1 & 1 & b \\
-	\hline
-\end{tabular}\\
-
-For each state and an execution from it, there is a corresponding execution from each related state with same return value. If a related state has same secret bit value, first execution is also the second execution. If a related state has opposite secret bit value, then corresponding execution is given in the above table. This demonstrates how given code snippet satisfies NI.
-\end{comment}
-
-Although the above program satisfies the NI definition, the secret bit can be determined via the observed frequency of repeated calls. When we look at the frequencies of output values, we can see that they correlate with the value of the secret bit.\\
-
-\begin{tabular}{| c | c | c |}
-	\hline
-	Secret bit & Output 0 \% & Output 1 \% \\
-	\hline
-	0 &	75\% & 25\% \\
-	\hline
-	1 &	25\% & 75\% \\
-	\hline
-\end{tabular}\\
-
-//write a conclusion before moving to the next problem.
- 
-\paragraph{Unsafe Primitives}
-The second problem observed involves using potentially unsafe primitives in implementation. Many storage systems process the data provided to them before storing it, which sometimes includes making decisions based on the contents of the data. A potentially malicious developer can take advantage of this capability to leak information. 
-
-One classic example of this is data deduplication. Deduplication requires branching on confidential data, which can be abused if not handled carefully. One instance we can use to illustrate this point is:
-
-\begin{lstlisting}
-write_to_txn(v)
-  if (v is in txn)
-    return false
-  else
-    add_to_txn(v)
-    return true
-\end{lstlisting}
-
-This implementation allows an adversary to query the contents of the transaction. 
-A simple solution that can be considered to solve this problem is prohibiting usage unsafe operations 
-by forcing a deep embedded language that doesn't have an operation to compare secret data or treating secret
-data as an abstract object that can't be compared. Such approaches has the advantage 
-that any program written in such a language is noninterfering by construction.
-
-Although it may be appealing to prohibit such operations to ensure the code is safe, it is a very constraining approach which eliminates many possible efficient implementations. It would certainly makes it impossible to implement data deduplication. 
-
-However, It is possible to implement a safe deduplicator. One way would be performing the process after the transaction is finalized but before committing it. Such a deferred deduplication will still branch on confidential data without revealing it.
-
-An ideal solution would prohibit unsafe implementations that uses the primitive while allowing the safe ones. 
-
-% Done - FK utilization -> primitive (above)
-% how could you prohibit such behaviors? before shooting down the
-% strawman solution, it would be good to explain it first. 
-
-% Done - FK Is the last paragraph the general solution to handling unsafe primitives? 
-
-\paragraph{Scalability}
-We aim to solve above problems while providing scalability. Any technique that will be used in large scale projects is required to support modularity, compositionality, expressive power, and interoperability with other techniques. Provided solution should not constrain developers to a certain proof technique for proving safety, as well as allow them to model systems they are working on to the desired level of detail. 
-
-%FK: I don't understand what scalability is from the above
-%paragraph. Could you give a concrete example as you did for the other
-%two challenges?
-
-\subsection*{Solution Approach}
-To address the problems stated above, we used 3 approaches:\\
-- Quantification of nondeterminism via tokens.\\
-- Abstraction via layer system.\\
-- Property transfer via simulation proofs.
-
-%FK: do the 3 approaches line up with the 3 problems in the previous section?
-
-\subsubsection*{Quantification of Nondeterminism}
-
-%FK: first describe/outlines what this approach is.
-
-This approach have two benefits. First and most significant, it enables us to
-turn nondeterministic executions into relatively deterministic ones. 
-Relatively deterministic execution is defined as an execution trace that is 
-deterministic given a particular sequence of nondeterministic choices.\\
-
-A simple example of this is execution of an operation that generates an encryption key. 
-A nondeterministic execution rule would be
-
-"forall s key, s --generate\_key-- (s, key)". 
-
-This rule states that when we run generate\_key we can get any key as a result of the execution.
-
-A relatively deterministic execution rule would be
-
-"forall s key, s --[key]generate\_key-- (s, key)".
-
-Difference between this rule and the previous one is subtle but crucial. 
-According to this rule, there is only one possible key you can get when you execute generate\_key in this specific conditions.
-
-In some sense, it can be thought as which key you will get is predetermined by the state of the world. Your execution is deterministic relative to the state of the world.
-In contrast, you could get any key in the nondeterministic execution regardless of the state of the world.
-
-% I hope we won't have to engage in any discussion about deterministic vs nondeterministic universe with reviewers.
-% Philosophical implications of this work is out of scope for the paper.
-
-% Done - FK: it would be great to have the examples; now I have a difficult
-% time understanding the current text.
-
-
-With this modified definition, we managed to state and prove a stronger version of noninterference: relatively deterministic noninterference (RDNI). RDNI requires that for any sequence of nondeterministic choices, if there is a completed execution of a program from a state, there exists another execution of the same program* from a related state with same choice sequence. Our definition is termination sensitive.
-
-RDNI's requirement for matching execution from any choice sequence ensures that no matter which nondeterministic branch is followed during the execution, there will be an indistinguishable execution from an equivalent state. This one-to-one correspondence implies that a state cannot be distinguished based on repeated observation of the system.
-
-Another benefit of quantification is that it allows us to weaken the requirements for NI preserving refinements. It is known that a bisimulation between implementation and abstraction is necessary for preserving NI if execution is nondeterministic. Relative determinism enables us to relax this requirement into a simulation with extra properties. \\
-
-//Explanatory image here\\
-
-One critical facet of this alteration is that it permits stronger abstractions that would not be feasible under bisimulations, allowing developers to keep visible only the crucial details of a system, while concealing the ones that are implementation specific.\\
-
-//Example
-
-
-% AI - This felt out of place here but probably should be somewhere else.
-%This method is implemented via tokens, an inductive data type that is provided to execution relation. Each token represents a particular nondeterministic choice (e.g. should execution continue or crash?). In some particular cases, they even act like wrappers for a list of tokens themselves. In other words, a token is a unit of nondeterminism that is required to execute a single step.\\
-
-%//EXAMPLE\\
-
-
-\subsubsection*{Abstraction via layer system}
-Abstraction is a useful tool when dealing with large and complex software systems.
-It allows developers to hide implementation details of different modules of a software and purely think in terms of its observed behavior.
-
-Our layer system streamlines the abstraction of implementations by providing tools that makes defining a new DSL that exhibits the same behavior with the implementation easier.
-This is crucial in hiding the details of functions that use potentially unsafe primitives in a noninterfering fashion.\\
-
-//Example\\
-
-Once an implementation is abstracted away with a layer, it becomes completely opaque to the rest of the system. Our system guarantees that an implementation that simulates a noninterfering layer is also noninterfering.
-
-Because the operations and state of a layer description are simpler than its underlying implementation, proving their noninterference becomes less complex as well. Additionally, implementations under the layer can be changed without affecting other proofs in the system.
-
-Transforming the representation of a system state has the benefit of simplifying how system is modeled. For example, a file system can be abstracted as a partial mapping between file names to file contents. Once properly abstracted, all the underliying complexities (e.g. inodes, log, block allocators etc.) becomes irrelevant to the system's behavior. This allows developers to define and prove simple confidentiality statements over simple representation. For instance, assigning an owner to each file is much more straightforward than designating each inode and data blocks to an owner, and subsequently keeping track of the information through varying stages of operations. This technique may even be impossible if implementation does optimizations that fit multiple owners' data in a single data unit (e.g. a disk block).
-
-\subsubsection*{NI Transfer via Simulation Proofs}
-It is known that, in general nondeterministic case, NI is not preserved under simulation, but under bisimulation. This creates a problem for abstraction techniques, which relies on simulation proofs to show the behavior of implementation is a subset of the abstractraction's. Since bisimulation is a stricter requirement than simulation, the amount of details an abstraction can omit is significantly reduced. Furthermore, you cannot introduce any new behavior or remove any existing behavior in an abstraction. (*Explain this better*)
-
-However we show that RDNI is preserved under simulations combined with some auxiliary properties. This relieves proof burden of the developer significantly as well as increases power of abstraction layers. Our layer system makes it possible to construct complex systems as isolated, self contained pieces; just like normal software systems.
-
-%SelfSimulation_Exists is required for termination sensitivity. If a developer don't care about termination sensitivity, then it is not necessary. In that case it needs to use termination insensitive variant of RDNI (SelfSimulation_Weak).
-
-
+\input{introduction}
+\include{problems}
+\include{solutions}
+\include{proof-figures}
+\end{document}
 
 \begin{comment}
 
@@ -286,4 +75,4 @@ This place will be referred as "the stash" and the action of hiding data there a
 %//Example here\\
 
 
-\end{document}
+
