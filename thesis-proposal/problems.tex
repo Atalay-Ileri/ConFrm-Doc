@@ -26,7 +26,7 @@ forall p s1 s2 s1r v,
     equivalent s1r s2r.
 \end{lstlisting} 
 
-Let's say that two states are equivalent if they are the same for their non-secret parts. Since any pair of state an return value is a valid execution, you can find another execution from a related state. This makes it satisfy NI definition.
+Let's say that two states are equivalent if they are the same for their non-secret parts. Since any pair of state and return value is a valid execution, you can find another execution from a related state. This makes it satisfy NI definition.
 
 \begin{comment}
 Here is a table for all possible ways an execution of above function could go:\\
@@ -65,35 +65,9 @@ Although the above program satisfies the NI definition, the secret bit can be de
 	\hline
 \end{tabular}\\
 
-//write a conclusion before moving to the next problem.
+Any adversary who can observe the output of the function sufficiently many times can infer the value of the secret bit with high confidence. This type of vulnerabilities are not limited to usage of randomization. They also manifests themselves when there are random events that can affect the behavior of the system. 
 
-% == motivation
-
-% frequency -> probability
-
-% "unsafe primitives": what is a safe primitive? seems to relate to
-% disksec's approach of not allowing any operations on data?
-
-% is data dedup a case where you can prove a meaningful non-interference
-% property? you say "safe dedup": what does that look like?
-
-% don't understand the `write_to_txn` example
-
-% better example for unsafe primitives
-
-% some example for scalability
-
-% == approach
-
-% quantification of ND: looks good to me
-
-% abstraction: what's different from many other kinds of abstraction,
-% like certikos?
-
-% NI transfer: is this a metatheory contribution, or does this impact how
-% the developer uses the system? 
-
-
+Main example we will consider is crash and recovery of a storage system. If the recovery behavior of the system is dependent on the secret data stored in it, then system may contain a vulnerability of this kind. 
 
 \paragraph{Unsafe Data Handling}
 The second problem observed involves handling the data in a potentially unsafe way. Many storage systems process the data provided to them before storing it. A potentially malicious developer can take advantage of this capability to leak information.
