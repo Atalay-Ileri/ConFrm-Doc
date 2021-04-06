@@ -1,11 +1,11 @@
-\subsection*{Solution Approach}
+\section{Solution Approach}
 To address the problems stated above, we used 3 approaches:\\
 - Quantification of nondeterminism via tokens.\\ (Solves Unsafety from Probability)
-- Abstraction via layer system.\\ (Solves Unsafe Data Handling and Modularity and Compositionality)
+- Abstraction via layer system.\\ (Solves Unsafe Data Handling) % and Modularity and Compositionality)
 - Property transfer via simulation proofs. (Enables usage of layers while maintaining safety)
 
 
-\subsubsection*{Quantification of Nondeterminism}
+\subsection{Quantification of Nondeterminism}
 To be able to address unsafety coming from certain kinds of probabilistic behavior, we decided to quantize the nondeterminism. We enhanced our execution semantics with a sequence, such that, whenever a nondeterministic choice needs to be made during execution, the sequence will contain the option that will be chosen. For all possible execution traces a program have under general nondeterministic semantics, there should be a sequence that will guide the execution to that result. 
 
 Our assumption is that nondeterminism in the system is independent of the contents of secret data but can depend on the public metadata. For example, size of the data can affect which nondeterministic choices are available but actual data cannot.
@@ -51,11 +51,7 @@ forall oracle p s1 s2 s1r v,
 
 If we revisit above example, we can show that it is indeed does not satisfy RDNI. For the choice sequence that chooses fort random bit as 1, there is no indistinguishable execution between the state where secret bit is 0 and the state where secret bit is 1.
 
-% AI - This felt out of place here but probably should be somewhere else.
-% This method is implemented via tokens, an inductive data type that is provided to execution relation. Each token represents a particular nondeterministic choice (e.g. should execution continue or crash?). In some particular cases, they even act like wrappers for a list of tokens themselves. In other words, a token is a unit of nondeterminism that is required to execute a single step.\\
-
-
-\subsubsection*{Abstraction via layer system}
+\subsection{Abstraction via layer system}
 Abstraction is a useful tool when dealing with large and complex software systems.
 It allows developers to hide implementation details of different modules of a software and purely think in terms of its observed behavior.
 
@@ -71,7 +67,7 @@ Because the operations and state of a layer description are simpler than its und
 
 Transforming the representation of a system state has the benefit of simplifying how system is modeled. For example, a file system can be abstracted as a partial mapping between file names to file contents. Once properly abstracted, all the underliying complexities (e.g. inodes, log, block allocators etc.) becomes irrelevant to the system's behavior. This allows developers to define and prove simple confidentiality statements over simple representation. For instance, assigning an owner to each file is much more straightforward than designating each inode and data blocks to an owner, and subsequently keeping track of the information through varying stages of operations. This technique may even be impossible if implementation does optimizations that fit multiple owners' data in a single data unit (e.g. a disk block).
 
-\subsubsection*{NI Transfer via Simulation Proofs}
+\subsection{NI Transfer via Simulation Proofs}
 It is known that, in general nondeterministic case, NI is not preserved under simulation, but under bisimulation. This creates a problem for abstraction techniques, which relies on simulation proofs to show the behavior of implementation is a subset of the abstraction's. Since bisimulation is a stricter requirement than simulation, the amount of details an abstraction can omit is significantly reduced. Furthermore, you cannot introduce any new behavior or remove any existing behavior in an abstraction.
 
 This restriction eliminated one of the best advantages of abstraction techniques, namely simplifying a system's model.

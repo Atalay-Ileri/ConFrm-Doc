@@ -1,5 +1,5 @@
-\subsection*{Problems and Motivation}
-\paragraph{Unsafety from Probability}
+\section{Problems and Motivation}
+\subsection{Unsafety from Probability}
 We are trying to tackle two problems in this work. First issue is the interaction between nondeterminism and noninterference. More specifically, standard noninterference definition fail to address leakages that resulted from different frequencies of possible execution traces of the same program. A simple example of this weakness can be seen below: 
 
 
@@ -11,20 +11,6 @@ else
 \end{lstlisting}
 
 This code leaks the secret bit 50\% of the time and outputs a random bit 50\% of the time. It is also important to note that it can output 0 or 1 independent of the secret value. This way, any (state, return) pair represents a successful execution. 
-
-//Write a transition here or move NI definition to somewhere else
-
-% \paragraph{Nondeterministic Noninterference}
-
-\begin{lstlisting}
-forall p s1 s2 s1r v,
-  equivalent s1 s2 ->
-  exec s1 p s1r v ->
-	
-  exists s2r,
-    exec s2 p s2r v /\
-    equivalent s1r s2r.
-\end{lstlisting} 
 
 Let's say that two states are equivalent if they are the same for their non-secret parts. Since any pair of state and return value is a valid execution, you can find another execution from a related state. This makes it satisfy NI definition.
 
@@ -69,7 +55,7 @@ Any adversary who can observe the output of the function sufficiently many times
 
 Main example we will consider is crash and recovery of a storage system. If the recovery behavior of the system is dependent on the secret data stored in it, then system may contain a vulnerability of this kind. 
 
-\paragraph{Unsafe Data Handling}
+\subsection{Unsafe Data Handling}
 The second problem observed involves handling the data in a potentially unsafe way. Many storage systems process the data provided to them before storing it. A potentially malicious developer can take advantage of this capability to leak information.
 
 A classic example of this phenomenon is branching on confidential data. If not done carefully, it can result in leakage of confidential data. This does not mean that branching on confidential data should be avoided at all costs.
@@ -97,7 +83,8 @@ However, It is possible to implement a safe deduplicator. One way would be perfo
 
 An ideal solution would prohibit unsafe implementations while allowing the safe ones with as little constraint as possible.  
 
-
+% remove this for now
+\begin{comment}
 \paragraph{Modularity and Compositionality}
 We aim to solve above problems while providing modularity and compositionality. Any technique that will be used in large scale projects is required to support modularity, compositionality, expressive power, and interoperability with other techniques. Provided solution should not constrain developers to a certain proof technique for proving safety, as well as allow them to model systems they are working on to the desired level of detail. 
 
@@ -108,3 +95,4 @@ We aim to solve above problems while providing modularity and compositionality. 
 
 % NZ: scalability -> composability
 % Give composability example.
+\end{comment}

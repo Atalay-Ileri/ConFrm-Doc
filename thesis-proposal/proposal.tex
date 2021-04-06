@@ -16,64 +16,13 @@
 \begin{document}
 \maketitle
 \input{introduction}
-\include{problems}
-\include{solutions}
-\include{proof-figures}
+\input{definitions}
+\input{problems}
+\input{solutions}
+\input{contributions}
+\input{timeline}
+%\include{proof-figures}
 \end{document}
-
-\begin{comment}
-
-\subsection*{System we consider}
-We are consider a storage system with a course-grained ownership. smallest data unit will be referred as a data block, Data are accessed with "a handle", which represents a group of data blocks. Each handle has an owner that is allowed to read and write data to it as well as transfer its ownership to another user.
-
-We are also assuming a crash-resistant transactional storage system where every API call is executed atomically. If a crash happens during an API call, then effects of the call either happens completely or doesn't happen at all.
-
-We assume system is running on a disk with asynchronious buffered writes. Until an explicit sync operation is performeds, it is not guaranteed writes to be persisted on the disk. Ones that are persisted also could be out of order.
-
-\subsection*{Running example}
-Throughout the paper, we will follow the scenario where a user writes some data to a file and then transfers ownership of the file to another user.
-\begin{lstlisting}
-append_and_transfer(handle, data, new_owner)
-  extend(handle, data)
-  change_owner(handle, new_owner)
-\end{lstlisting}
-Example is simple enough to not have any distracting details but complex enough to reveal subtleties involved in a possibly malicious storage system implementation.\\
-
-Possible problems that can arise in implementation of write:
-
-- System can stash away the input confidential data. 
-(Same as reading the file and stashing it somewhere?)
-
-- System can write data to someone else's file
-
-- System can leak data due to its crash-resistance mechanisms.\\
-
-Possible problems that can arise in implementation of change\_owner:
-
-- System can give ownership to someone else,
-
-- System can write some confidential data belonging to the current user 
-to the file before transferring it to new owner.
-
-- System can read file's content then reveal it some other time.\\
-
-If we generalize these problems we can have following general groups:
-
-- Hiding confidential data in a place that gets abstracted away.
-This place will be referred as "the stash" and the action of hiding data there as "stashing". This data either can be the new data that is provided to the system as an input to an API call or already existing data that is read by the system during an API call.
-
-- Transferring an existing data to another user. This could be the stashed or already on-disk data.
-
-- Revealing data contents via different crash-and-recovery outcomes.
-
-\end{comment}
-
-
-%Just like functionality of systems can be precisely defined in terms of specifications, desired properties of those systems can be precisely defined in terms of system properties. A class of these properties that encompasses security and liveness is called hyperproperties. Unlike properties that depends on single run of a system, hyperproperties relate multiple runs of a system. Because of this distinction, hyperproperties of a system are harder to prove and are not preserved under simulation based refinement. A strong notion of simulation called bisimulation is required to preserve hyperproperties. However bisimulation requirement reduces the power of abstraction significantly.
-
-%This poses a challenge to the modular approaches to proving hyperproperties. Since simulation is a core technique to modularly proving an implementation behaving similar to an abstract representation.\\
-
-%//Example here\\
 
 
 

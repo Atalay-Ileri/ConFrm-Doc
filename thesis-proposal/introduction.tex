@@ -1,4 +1,4 @@
-\subsection*{Introduction}
+\section{Introduction}
 
 % FK: Talk about bugs and security exploits
 Absence of bugs were and still are the main focus of formal verification. Many proof techniques and frameworks exist to ensure programs are functionally correct–they do what they are supposed to do. Yet, the opposite is also equally important, as programs should not function in ways they are not meant to. Due to the widespread usage of open source and collaborative software projects, this requirement is more important than ever. It can take only a single malicious program to compromise the integrity of an entire system. 
@@ -22,6 +22,18 @@ To test the capabilities of ConFrm, we implemented ConFS, a confidential file sy
 
 Both ConFrm and ConFS are implemented in Coq. Proofs are fully machine checked to ensure their correctness.
 
+To demonstrate the possible hardship of writing a specification that can prevent malicious implementations, lets look at a informal specification for a program that copies a file. We can start with the obvious "Program should create a new file in the destination with contents of the original file and leave the original file unchanged." If we were only interested in functional correctness this could be an acceptable specification. However here are some security problems that is associated with this specification:
+
+\begin{itemize}
+	\item Program can append extra data to the new file.
+	\item Program can create an extra copy of the file in somewhere else.
+	\item Program can change access permissions of the new file.
+	\item Program can ...
+\end{itemize}
+
+Some of these changes can be detected by the original user but some of them will be hidden. For example, if copy of a file is created in a directory that is inaccessible to the current user, the user will not be able to detect it. 
+
+A good security specification should address all these possible vulnerabilities but also should be clear and concise so it can be read, understood and reviewed by humans. 
 % FK: it would be good to explain in intro or next section the
 % challenge of nailing down a spec because 
 % it must limit an adversarial implementation.
