@@ -6,39 +6,25 @@ $$
 i_1\ R(\approx)\ i_2 := \exists\ a_1\ a_2,\ i_1\ R\ a_1\ \wedge\ i_2\ R\ a_2\ \wedge\ a_1 \approx a_2
 $$
 
+Standard definitions we use for noninterference, termination sensitivity and simulation are given below for the sake of completeness.
+\subsubsection*{Noninterference}
 
-\subsection{Noninterference}
-
-$\forall\ p_1\ p_2\ s_1\ s_2\ s_1'\ v,$\\
+$\forall\ s_1\ s_2\ s_1'\ v,$\\
 $s_1\approx s_2 \rightarrow$\\
 $s_1 =p_1\Rightarrow (s_1', v) \rightarrow$\\
-$\exists s_2',\ s_2 =p_2\Rightarrow (s_2', v)\ \wedge\ s_1'\approx s_2'.$\\
+$\exists s_2',\ s_2 =p_2\Rightarrow (s_2', v)\ \wedge\ s_1'\approx s_2'.$
 
-\subsection{Termination Sensitivity}
+\subsubsection*{Termination Sensitivity}
 
-$\forall\ p_1\ p_2\ s_1\ s_2\ s_1'\ v,$\\
+$\forall\ s_1\ s_2\ s_1'\ v,$\\
 $s_1\approx s_2 \rightarrow$\\
 $s_1 =p_1\Rightarrow (s_1', v) \rightarrow$\\
-$\exists s_2'\ v',\ s_2 =p_2\Rightarrow (s_2', v').$\\
+$\exists s_2'\ v',\ s_2 =p_2\Rightarrow (s_2', v').$
 
-\subsection{Simulation}
+\subsubsection*{Simulation}
 
-$\forall\ p\ i\ i'\ a\ v,$\\
+$\forall\ i\ i'\ a\ v,$\\
 $i\ R\ a \rightarrow$\\
 $i =R(p)\Rightarrow (i', v) \rightarrow$\\
-$\exists a',\ a =p\Rightarrow (a', v)\ \wedge\ i'\ R\ a'.$\\
+$\exists a',\ a =p\Rightarrow (a', v)\ \wedge\ i'\ R\ a'.$
 
-\subsection{Simulation with Oracles}
-
-$\forall\ o_a, o_i, p\ i\ i'\ a\ v,$\\
-$i\ R\ a \rightarrow$\\
-$o_i\ R_o\ o_a \rightarrow$\\
-$i =[o_i] R(p)\Rightarrow (i', v) \rightarrow$\\
-$\exists a',\ a =[o_r] p\Rightarrow (a', v)\ \wedge\ i'\ R\ a'.$\\
-
-\subsection{RDNI}
-
-$\forall\ o\ p_1\ p_2\ s_1\ s_2\ s_1'\ v,$\\
-$s_1\approx s_2 \rightarrow$\\
-$s_1 =[o]p_1\Rightarrow (s_1', v) \rightarrow$\\
-$\exists s_2',\ s_2 =[o]p_2\Rightarrow (s_2', v)\ \wedge\ s_1'\approx s_2'.$\\

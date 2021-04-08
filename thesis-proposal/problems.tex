@@ -1,7 +1,10 @@
+%%%%%%%%%%%%%
+% TODO
+%%%%%%%
+
 \section{Problems and Motivation}
 \subsection{Unsafety from Probability}
 We are trying to tackle two problems in this work. First issue is the interaction between nondeterminism and noninterference. More specifically, standard noninterference definition fail to address leakages that resulted from different frequencies of possible execution traces of the same program. A simple example of this weakness can be seen below: 
-
 
 \begin{lstlisting}
 if (random_bit() = = 1)
@@ -13,31 +16,6 @@ else
 This code leaks the secret bit 50\% of the time and outputs a random bit 50\% of the time. It is also important to note that it can output 0 or 1 independent of the secret value. This way, any (state, return) pair represents a successful execution. 
 
 Let's say that two states are equivalent if they are the same for their non-secret parts. Since any pair of state and return value is a valid execution, you can find another execution from a related state. This makes it satisfy NI definition.
-
-\begin{comment}
-Here is a table for all possible ways an execution of above function could go:\\
-
-\begin{tabular}{| c | c | c | c | c |}
-	\hline
-	 & Secret Bit & First Random Bit & Output & Noninterfering Execution \\
-	\hline
-	a &	0 & 0 & 0 & d \\
-	\hline
-	b &	0 & 0 & 1 & e \\
-	\hline
-	c &	0 & 1 & 0 & d \\
-	\hline
-	\hline
-	d &	1 & 0 & 0 & a \\
-	\hline
-	e &	1 & 0 & 1 & b \\
-	\hline
-	f &	1 & 1 & 1 & b \\
-	\hline
-\end{tabular}\\
-
-For each state and an execution from it, there is a corresponding execution from each related state with same return value. If a related state has same secret bit value, first execution is also the second execution. If a related state has opposite secret bit value, then corresponding execution is given in the above table. This demonstrates how given code snippet satisfies NI.
-\end{comment}
 
 Although the above program satisfies the NI definition, the secret bit can be determined via the observed frequency of repeated calls. When we look at the frequencies of output values, we can see that they correlate with the value of the secret bit.\\
 
@@ -82,17 +60,3 @@ It is quite a strong property but also a restrictive one which eliminates many p
 However, It is possible to implement a safe deduplicator. One way would be performing the process after the transaction is finalized but before committing it. Such a deferred deduplication will still branch on confidential data but without revealing it.
 
 An ideal solution would prohibit unsafe implementations while allowing the safe ones with as little constraint as possible.  
-
-% remove this for now
-\begin{comment}
-\paragraph{Modularity and Compositionality}
-We aim to solve above problems while providing modularity and compositionality. Any technique that will be used in large scale projects is required to support modularity, compositionality, expressive power, and interoperability with other techniques. Provided solution should not constrain developers to a certain proof technique for proving safety, as well as allow them to model systems they are working on to the desired level of detail. 
-
-
-% FK: I don't understand what scalability is from the above
-% paragraph. Could you give a concrete example as you did for the other
-% two challenges?
-
-% NZ: scalability -> composability
-% Give composability example.
-\end{comment}

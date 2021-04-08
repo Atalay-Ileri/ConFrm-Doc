@@ -1,20 +1,27 @@
+%%%%%%%%%%%%%
+% TODO
+%%%%%%%
+
 \section{Introduction}
 
 % FK: Talk about bugs and security exploits
 Absence of bugs were and still are the main focus of formal verification. Many proof techniques and frameworks exist to ensure programs are functionally correct–they do what they are supposed to do. Yet, the opposite is also equally important, as programs should not function in ways they are not meant to. Due to the widespread usage of open source and collaborative software projects, this requirement is more important than ever. It can take only a single malicious program to compromise the integrity of an entire system. 
 
-Though the significance of this notion is indisputable, it is often disregarded by users. Users assume developers act in good faith, but a single ill-intentioned developer {\color{red}(is there another word you could use here?)} could induce a catastrophic effect on a multitude of systems.
 
-% FK: the transition between the first two paragraphs and the next one
-% awkward.  how is ConFrm fixing the problem identified in the first
-% two paragraphs.  the first two appear to talk about security in
-% general, which seems to get a ton of attention, and is not
-% disregarded.  I think you have something specific in mind in the
-% first two paragraphs, but I don't know what.
+Writing a security specification is generally harder that writing a correctness specification. To demonstrate the possible hardships of writing a specification that can prevent malicious implementations, lets look at a informal specification for a program that copies a file. We can start with the obvious "Program should create a new file in the destination with contents of the original file and leave the original file unchanged." If we were only interested in functional correctness, this could be an acceptable specification. However here are some security problems that is associated with this specification:
 
-Despite its importance, this notion of safety received much less attention from research community. Some works on this area include [citations here]. Most of these studies work with strict information flow policies that do not allow discretionary access control. DISKSEC uses a relaxed notion that allows disclosure of certain data and metadata. Unfortunately, it has serious limitations that include weaker guarantees for nondeterministic executions, as well as the inability to handle confidential data based control flow. 
+\begin{itemize}
+	\item Program can append extra data to the new file.
+	\item Program can create an extra copy of the file in somewhere else.
+	\item Program can change access permissions of the new file.
+\end{itemize}
 
-These works also do not provide clear abstraction layers that enable modularity while preserving safety. (*I need to verify this. It is a bold claim. Can extend on this if it is true. *) 
+% AI - Is this out of place? Should I remove the next part?
+Some of these changes can be detected by the original user but some of them will be hidden. For example, if copy of a file is created in a directory that is inaccessible to the current user, the user will not be able to detect it. 
+
+A good security specification should address all these possible vulnerabilities but also should be clear and concise so it can be read, understood and reviewed by humans. Finding the right balance between these conflicting requirements what makes writing a security specification hard.
+
+There are many studies that addressed this problem [Citations Here]. Most of these studies work with strict information flow policies that do not allow discretionary access control.Among them, DiskSec uses a relaxed notion that allows disclosure of certain data and metadata. However, it also has serious limitations that include weaker guarantees for nondeterministic executions, as well as the inability to handle confidential data based control flow. 
 
 Our proposed solution to above problems is ConFrm, a framework for implementing and proving the confidentiality of storage systems in a modular fashion. ConFrm facilitates a noninterference definition with better guarantees for nondeterministic behavior, and provides the required tools and necessary conditions for safety preserving abstractions. These two components of ConFrm enable us to overcome the limitations of previous works and provide a simple yet powerful tool for implementing safe storage systems. 
 
@@ -22,20 +29,3 @@ To test the capabilities of ConFrm, we implemented ConFS, a confidential file sy
 
 Both ConFrm and ConFS are implemented in Coq. Proofs are fully machine checked to ensure their correctness.
 
-To demonstrate the possible hardship of writing a specification that can prevent malicious implementations, lets look at a informal specification for a program that copies a file. We can start with the obvious "Program should create a new file in the destination with contents of the original file and leave the original file unchanged." If we were only interested in functional correctness this could be an acceptable specification. However here are some security problems that is associated with this specification:
-
-\begin{itemize}
-	\item Program can append extra data to the new file.
-	\item Program can create an extra copy of the file in somewhere else.
-	\item Program can change access permissions of the new file.
-	\item Program can ...
-\end{itemize}
-
-Some of these changes can be detected by the original user but some of them will be hidden. For example, if copy of a file is created in a directory that is inaccessible to the current user, the user will not be able to detect it. 
-
-A good security specification should address all these possible vulnerabilities but also should be clear and concise so it can be read, understood and reviewed by humans. 
-% FK: it would be good to explain in intro or next section the
-% challenge of nailing down a spec because 
-% it must limit an adversarial implementation.
-
-% FK: Give example of bad spec then tear it apart to demonstrate why it is hard.

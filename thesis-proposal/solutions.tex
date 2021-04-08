@@ -1,19 +1,25 @@
+%%%%%%%%%%%%%
+% TODO
+%%%%%%%
+
 \section{Solution Approach}
-To address the problems stated above, we used 3 approaches:\\
-- Quantification of nondeterminism via tokens.\\ (Solves Unsafety from Probability)
-- Abstraction via layer system.\\ (Solves Unsafe Data Handling) % and Modularity and Compositionality)
-- Property transfer via simulation proofs. (Enables usage of layers while maintaining safety)
+To address the problems stated above, we used 3 approaches:
+\begin{itemize}
+	\item Quantification of nondeterminism via tokens to solve unsafety from probability.
+	\item Abstraction via layer system to solve unsafe data handling.
+	\item Property transfer via simulation proofs to enable usage of layers while maintaining safety.
+\end{itemize}
 
 
 \subsection{Quantification of Nondeterminism}
 To be able to address unsafety coming from certain kinds of probabilistic behavior, we decided to quantize the nondeterminism. We enhanced our execution semantics with a sequence, such that, whenever a nondeterministic choice needs to be made during execution, the sequence will contain the option that will be chosen. For all possible execution traces a program have under general nondeterministic semantics, there should be a sequence that will guide the execution to that result. 
 
-Our assumption is that nondeterminism in the system is independent of the contents of secret data but can depend on the public metadata. For example, size of the data can affect which nondeterministic choices are available but actual data cannot.
+Our assumption is that nondeterminism in the system is independent of the contents of secret data but can depend on the public metadata. For example, size of the data can affect which nondeterministic choices are available but actual data cannot. This assumption is enforced as a proof obligation to use our technique.
 
 This approach have two benefits. First and most significant, it enables us to
 turn nondeterministic executions into relatively deterministic ones. 
 Relatively deterministic execution is defined as an execution trace that is 
-deterministic given a particular sequence of nondeterministic choices.\\
+deterministic given a particular sequence of nondeterministic choices.
 
 A simple example of this is execution of an operation that generates an encryption key. 
 A nondeterministic execution rule would be
@@ -32,24 +38,31 @@ According to this rule, there is only one possible key you can get when you exec
 In some sense, it can be thought as which key you will get is predetermined by the state of the world. Program execution is deterministic relative to the state of the world.
 In contrast, you could get any key in the nondeterministic execution regardless of the state of the world.
 
-% I hope we won't have to engage in any discussion about deterministic vs nondeterministic universe with reviewers.
-% Philosophical implications of this work is out of scope for the paper.
+With this modified definition, we managed to state and prove a stronger version of noninterference: relatively deterministic noninterference (RDNI). RDNI requires that, for any sequence of nondeterministic choices, if there is a completed execution of a program from a state, then there exists another execution of a related program from a related state with same choice sequence.
 
-With this modified definition, we managed to state and prove a stronger version of noninterference: relatively deterministic noninterference (RDNI). RDNI requires that, for any sequence of nondeterministic choices, if there is a completed execution of a program from a state, then there exists another execution of a related program from a related state with same choice sequence. Our definition is termination sensitive.
+\begin{figure}[H]
+	$\forall\ o\ s_1\ s_2\ s_1'\ v,$\\
+	$s_1\approx s_2 \rightarrow$\\
+	$s_1 =[o]p_1\Rightarrow (s_1', v) \rightarrow$\\
+	$\exists s_2',\ s_2 =[o]p_2\Rightarrow (s_2', v)\ \wedge\ s_1'\approx s_2'.$\\
+	\caption{Relatively Deterministic Noninterference}
+\end{figure}
 
 RDNI's requirement for matching execution from any choice sequence ensures that no matter which nondeterministic branch is followed during the execution, there will be an indistinguishable execution from an equivalent state. This one-to-one correspondence implies that a state cannot be distinguished based on repeated observation of the system.
 
-\begin{lstlisting}
-forall oracle p s1 s2 s1r v,
-  R s1 s2 ->
-  exec oracle s1 p s1r v ->
+If we revisit random bit example, we can show that it is indeed does not satisfy RDNI. For the choice sequence that chooses first random bit as 1, there is no indistinguishable execution between the state where secret bit is 0 and the state where secret bit is 1.
 
-  exists s2r,
-    exec oracle s2 p s2r v /\
-    R s1r s2r.
-\end{lstlisting}
+We also modified termination sensitivity and simulation definitions to integrate relative determinism. Modification of termination sensitivity was straightforward: executions are parameterized by the same oracle. Modifying simulation definition required a more complicated approach. We extended traditional refinements with oracle refinement relation.
+Oracle refinement relation is parameterized by a user, an implementation state and an abstract program and will be denoted with $R_o$. We omit the user, state and program parameters in notation when it is clear from the context. Our modified relation is
 
-If we revisit above example, we can show that it is indeed does not satisfy RDNI. For the choice sequence that chooses fort random bit as 1, there is no indistinguishable execution between the state where secret bit is 0 and the state where secret bit is 1.
+\begin{figure}[H]
+$\forall\ o_i\ o_a\ i\ i'\ a\ v,$\\
+$i\ R\ a \rightarrow$\\
+$o_i\ R_o\ o_a \rightarrow$\\
+$i =[o_i] R(p)\Rightarrow (i', v) \rightarrow$\\
+$\exists a',\ a =[o_r] p\Rightarrow (a', v)\ \wedge\ i'\ R\ a'.$\\
+	\caption{Simulation with Oracles}
+\end{figure}
 
 \subsection{Abstraction via layer system}
 Abstraction is a useful tool when dealing with large and complex software systems.
@@ -57,9 +70,7 @@ It allows developers to hide implementation details of different modules of a so
 
 % AI - Rewrite or delete this
 Our layer system streamlines the abstraction of implementations by providing tools that makes defining a new DSL that exhibits the same behavior with the implementation easier.
-This is crucial in hiding the details of functions that use potentially unsafe primitives in a noninterfering fashion.\\
-
-//Example\\
+This is crucial in hiding the details of functions that use potentially unsafe primitives in a noninterfering fashion.
 
 Once an implementation is abstracted away with a layer, it becomes completely opaque to the rest of the system. Our system guarantees that an implementation that simulates a noninterfering layer is also noninterfering.
 
@@ -75,22 +86,10 @@ On top of that, bisimulation proofs are much more cumbersome compared to simulat
 
 However we show that RDNI is preserved under simulations combined with some auxiliary properties. This relieves proof burden of the developer significantly as well as increases power of abstraction layers. Our layer system makes it possible to construct complex systems as isolated, self contained pieces; just like normal software systems.
 
-Our core theorem states that, if an abstract layer is RDNI w.r.t. equivalence relation E, then an implementation layer that refines the abstract layer is RDNI w.r.t. equivalence relation E', where i1 E' i2 if "there exists two abstract states a1 and a2 that is refined by i1 and i2 respectively and a1 E a2".  
+Our core theorem states that, if an abstract layer is RDNI w.r.t. $\approx$, then an implementation layer that refines the abstract layer is RDNI w.r.t. $R(\approx)$.  
 
-\begin{lstlisting}
-Definition refines_related 
-(related_abs:  L_abs.(state) -> L_abs.(state) -> Prop)
-(si1 si2: L_imp.(state)) : Prop :=
-  exists (sa1 sa2: L_abs.(state)),
-    R.(refines_to) si1 sa1 /\
-    R.(refines_to) si2 sa2 /\
-    related_abs sa1 sa2.
-\end{lstlisting}
+Crux of the technique is unifying two abstract executions via relative determinism. First execution is obtained by simulation followed by noninteference of the abstract layer. Second execution is obtained by simulation from related state. Relative determinism ensures that these two executions and their final states are one and the same. Once this fact is established, final states of the two implementation executions become equivalent by definition.
 
-\input{derived-equivalence-figures}
+To be able to employ the theorem in termination-sensitive way, one needs to show that $R(\approx)$ is termination sensitive w.r.t. programs p1 and p2 we are reasoning about.
 
-Crux of the technique is unifying two executions via relative determinism. First execution is obtained by simulation followed by noninteference of the abstract layer. Second execution is obtained by simulation from related state. Relative determinism states ensures that these two executions and their final states are one and the same. Once this fact is established, final states of the two implementation executions become equivalent by definition.
-
-To be able to employ the theorem in termination-sensitive way, one needs to show that E' is termination sensitive w.r.t. programs p1 and p2 we are reasoning about. Specifically, if there exists an execution of p1 from s1, then any state s2 such that s1 E' s2 implies existence of an execution of p2 from s2 (Rule 2). \\
-
-\input{figures}
+%\input{figures}
