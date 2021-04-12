@@ -1,4 +1,5 @@
-\section{Definitions}
+\section{Definitions and Notation}
+Next we will present standard notations and definitions that are used in the rest of the text. All the definitions presented here are for the concepts that is commonly found in other works. Since there are multiple definitions for noninterference, termination sensitivity, and simulation in the literature, ones that we used are also given below. We modified termination sensitivity and noninterference definitions to be parameterized over two programs, instead of one. Reason for this is that, in the context of this paper, a program refers to a routine and its inputs. Aforementioned modification allowed us to reason about the same routine with different inputs. Any definition or notation that is used for new contributions of the paper will be introduced throughout the paper.
 
 We use $a$ and $i$ to denote abstraction and implementation states respectively, and use $s$ when distinction is irrelevant.
 $s =p\Rightarrow (s', v)$ denotes the execution of program $p$ from state $s$ that results in state $s'$ and returns $v$. $\approx$ is used to represent an equivalence relation between two abstract states. $R$ denotes a refinement relation between abstraction and its implementation. $R(p)$ represents the refining implementation program, and $R(\approx)$ represents derived equivalence relation between two implementation states. $R(\approx)$ is defined as 
@@ -6,7 +7,7 @@ $$
 i_1\ R(\approx)\ i_2 := \exists\ a_1\ a_2,\ i_1\ R\ a_1\ \wedge\ i_2\ R\ a_2\ \wedge\ a_1 \approx a_2
 $$
 
-Standard definitions we use for noninterference, termination sensitivity and simulation are given below for the sake of completeness.
+
 \subsubsection*{Noninterference}
 
 $\forall\ s_1\ s_2\ s_1'\ v,$\\

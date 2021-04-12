@@ -22,6 +22,7 @@ Relatively deterministic execution is defined as an execution trace that is
 deterministic given a particular sequence of nondeterministic choices.
 
 A simple example of this is execution of an operation that generates an encryption key. 
+
 A nondeterministic execution rule would be
 
 $$\forall\ s\ key,\ s  =GenerateKey\Rightarrow (s, key)$$ 
@@ -53,6 +54,7 @@ RDNI's requirement for matching execution from any choice sequence ensures that 
 If we revisit random bit example, we can show that it is indeed does not satisfy RDNI. For the choice sequence that chooses first random bit as 1, there is no indistinguishable execution between the state where secret bit is 0 and the state where secret bit is 1.
 
 We also modified termination sensitivity and simulation definitions to integrate relative determinism. Modification of termination sensitivity was straightforward: executions are parameterized by the same oracle. Modifying simulation definition required a more complicated approach. We extended traditional refinements with oracle refinement relation.
+
 Oracle refinement relation is parameterized by a user, an implementation state and an abstract program and will be denoted with $R_o$. We omit the user, state and program parameters in notation when it is clear from the context. Our modified relation is
 
 \begin{figure}[H]
@@ -66,30 +68,21 @@ $\exists a',\ a =[o_r] p\Rightarrow (a', v)\ \wedge\ i'\ R\ a'.$\\
 
 \subsection{Abstraction via layer system}
 Abstraction is a useful tool when dealing with large and complex software systems.
-It allows developers to hide implementation details of different modules of a software and purely think in terms of its observed behavior.
+It allows developers to hide implementation details of different modules of a software and purely think in terms of its abstract behavior.
 
-% AI - Rewrite or delete this
-Our layer system streamlines the abstraction of implementations by providing tools that makes defining a new DSL that exhibits the same behavior with the implementation easier.
-This is crucial in hiding the details of functions that use potentially unsafe primitives in a noninterfering fashion.
+ConFrm's layer system streamlines the abstraction of implementations by providing tools that makes defining new DSLs and proving an implementation exhibits the same behavior with the defined abstraction easier. Once an implementation is abstracted away with a layer, it becomes completely opaque to the rest of the system. ConFrm guarantees that an implementation that simulates a confidential layer is also confidential.
 
-Once an implementation is abstracted away with a layer, it becomes completely opaque to the rest of the system. Our system guarantees that an implementation that simulates a noninterfering layer is also noninterfering.
+Layering enables decoupling of system implementation and the proof technique that will be used to prove confidentiality of the system. It prevents the constraints that is associated with any particular proof technique to affect entire system. For example, DiskSec's sealed block approach prohibit branching on confidential data to provide substantial help in proof effort. However, this makes optimizations like checksum logging impossible to implement. Layering allows developers to write such implementations, abstract them away to create an interface that conforms to the restrictions of a proof approach then use said proof approach to prove confidentiality of their system.
 
-Because the operations and state of a layer description are simpler than its underlying implementation, proving their noninterference becomes less complex as well. Additionally, implementations under the layer can be changed without affecting other proofs in the system.
-
-Transforming the representation of a system state has the benefit of simplifying how system is modeled. For example, a file system can be abstracted as a partial mapping between file names to file contents. Once properly abstracted, all the underliying complexities (e.g. inodes, log, block allocators etc.) becomes irrelevant to the system's behavior. This allows developers to define and prove simple confidentiality statements over simple representation. For instance, assigning an owner to each file is much more straightforward than designating each inode and data blocks to an owner, and subsequently keeping track of the information through varying stages of operations. This technique may even be impossible if implementation does optimizations that fit multiple owners' data in a single data unit (e.g. a disk block).
+Additionally, the operations and state of an abstraction are simpler than its underlying implementation, proving their confidentiality becomes less complex as well. Also, implementations under a layer can be changed without affecting other proofs in the system.
 
 \subsection{NI Transfer via Simulation Proofs}
-It is known that, in general nondeterministic case, NI is not preserved under simulation, but under bisimulation. This creates a problem for abstraction techniques, which relies on simulation proofs to show the behavior of implementation is a subset of the abstraction's. Since bisimulation is a stricter requirement than simulation, the amount of details an abstraction can omit is significantly reduced. Furthermore, you cannot introduce any new behavior or remove any existing behavior in an abstraction.
+It is known that, in general nondeterministic case, NI is not preserved under simulation, but preserved under bisimulation. This creates a problem for abstraction techniques, which relies on simulation proofs to show the behavior of implementation is a subset of the abstraction's. Since bisimulation is a stricter requirement than simulation, the amount of details an abstraction can omit is significantly reduced. Furthermore, you cannot introduce any new behavior or remove any existing behavior in an abstraction.
 
-This restriction eliminated one of the best advantages of abstraction techniques, namely simplifying a system's model.
-On top of that, bisimulation proofs are much more cumbersome compared to simulation proofs. 
+This restriction eliminates one of the best advantages of abstraction techniques, namely simplifying a system's model. On top of that, bisimulation proofs are much more cumbersome compared to simulation proofs. 
 
-However we show that RDNI is preserved under simulations combined with some auxiliary properties. This relieves proof burden of the developer significantly as well as increases power of abstraction layers. Our layer system makes it possible to construct complex systems as isolated, self contained pieces; just like normal software systems.
+However we show that RDNI is preserved under simulations combined with some auxiliary properties. This relieves proof burden of the developer significantly as well as increases power of abstraction layers. This preservation makes it possible to use traditional abstraction techniques to construct complex systems as isolated, self contained pieces.
 
 Our core theorem states that, if an abstract layer is RDNI w.r.t. $\approx$, then an implementation layer that refines the abstract layer is RDNI w.r.t. $R(\approx)$.  
 
-Crux of the technique is unifying two abstract executions via relative determinism. First execution is obtained by simulation followed by noninteference of the abstract layer. Second execution is obtained by simulation from related state. Relative determinism ensures that these two executions and their final states are one and the same. Once this fact is established, final states of the two implementation executions become equivalent by definition.
-
-To be able to employ the theorem in termination-sensitive way, one needs to show that $R(\approx)$ is termination sensitive w.r.t. programs p1 and p2 we are reasoning about.
-
-%\input{figures}
+To be able to employ the theorem in termination-sensitive way, one needs to prove that programs he is reasoning about are termination sensitive with respect to $R(\approx)$.
