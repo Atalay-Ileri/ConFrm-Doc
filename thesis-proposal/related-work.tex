@@ -2,7 +2,9 @@
 
 ConFrm and ConFs builds on a diverse body of prior work. We will explain these works throughout this chapter. 
 
-\paragraph{Relatively deterministic noninterference.} There is a significant work on formalizing noninterference properties [19, 25, 26, 29, 30, 32, disksec]. ConFrm's relatively deterministic noninterference builds on top of this existing work. Our definition is different from previous body of work by how it treats nondeterminism in its formalism. ConFrm takes a more fine grained approach on relating nondeterministic executions by requiring a strong coupling between executions for each nondeterministic execution branch.
+\paragraph{Noninterference properties.} There is a significant work on formalizing noninterference properties [19, 25, 26, 29, 30, 32, disksec]. ConFrm's relatively deterministic noninterference builds on top of this existing work. 
+
+ConFrm's definition is different from previous body of work by how it treats nondeterminism in its formalism. ConFrm takes a more fine grained approach on relating nondeterministic executions by requiring a strong coupling between executions for each nondeterministic execution branch.
 
 %rewrite this for paper
 \paragraph{Machine-checked security in systems.} 
@@ -26,7 +28,7 @@ is no possibility of returning confidential data to some
 principals (but not others). Finally, there is no support for
 nondeterministic crashes.
 
-DiskSec supports nondeterministic crashes, discretionary access control and shared data structures. However it lacks support for branching on confidential data (e.g. hash based logging), abstraction layers and provides weaker guarantees for crashes. It also constrains the developer to a certain proof strategy (i.e. sealed blocks and unsealing traces) to prove noninterference.
+DiskSec supports nondeterministic crashes, discretionary access control and shared data structures. However it lacks support for branching on confidential data (e.g. hash based logging), abstraction layers and provides weaker guarantees for crashes.
 
 %rewrite this for paper
 \paragraph{Information flow and type systems.} 
@@ -43,13 +45,24 @@ buffer cache) that contain data from different users.
 SeLoc[??] uses double weakest preconditions to prove noninterference for fine grained concurrent programs. It is built on top of IRIS[??], a separation logic based framework to prove correctness of fine grained concurrent programs. It provides a confidentiality ensuring type system and a wide array of tools to the developers. However, employing SeLoc requires using IRIS which adds a substantial entry barrier. Conversely, ConFrm is standalone and lightweight but doesn't offer full array of tools SeLoc offers.
 
 %write this
-\paragraph{Compositional Noninterference.} 
+\paragraph{Sequential composability and confidentiality preserving refinements.} 
+Since it is known that noninterference is not preserved in the general case[??],
+there is a body of work that tries to identify the conditions that makes refinements noninterference preserving.
+ 
+Sun et. al. [??] proposes two confidentiality properties for interface automata: SIR-GNNI and RRNI. Both properties are based on refinements and defined relative to arbitrary security lattices. They also provide sufficient conditions that makes SIR-GNNI and RRNI sequentially compositional. 
+
+Baumann et. al. [??] formulates noninterference as an epistemic logic over trace sets. They define ignorance preserving refinements and prove that it is a sufficient condition to preserve noninterference of abstraction. They also show that ignorance preserving refinements are not compositional w.r.t. sequential composition. They propose another class of refinements called relational refinements that are sequentially compositional. 
+
+ConFrm's definition is also sequentially compositional. Our suggested property differs from existing work in two points. Firstly, it provides stronger guarantees for nondeterministic executions. Secondly, it supports reasoning about crash and recovery of the storage system.
+
 	%https://www.google.com/books/edition/Principles_of_Security_and_Trust/yKlVDwAAQBAJ?hl=en&gbpv=1&dq=noninterference+composition&pg=PA53&printsec=frontcover
 	
 	%https://arxiv.org/abs/1910.00905
 	
 	%https://library.oapen.org/bitstream/handle/20.500.12657/27744/1002261.pdf?sequence=1#page=65
 	
+	%Sun
 	%https://ieeexplore.ieee.org/abstract/document/8029662?casa_token=dQhnCKWA07UAAAAA:AEf00GwLFCEQH78YmZVLyT0ny1-DSYr6g4ibsJiq83pLMpBms7xetLCBh81G9oa0B3_4-y4
 	
+	%Baumann
 	%https://publications.cispa.saarland/3213/1/InfoFlowRefinement.pdf
