@@ -4,14 +4,14 @@ Next we will present standard notations and definitions that are used in the res
 We use $a$ and $i$ to denote abstraction and implementation states respectively, and use $s$ when the distinction is irrelevant.
 $s =p\Rightarrow (s', v)$ denotes the execution of program $p$ from state $s$ that results in state $s'$ and returns $v$. $\approx$ is used to represent an equivalence relation between two abstract states. 
 
-The equivalence relation that is used in ConFs is parameterized by a user and states that 
+The equivalence relation that is used in ConFs is parameterized by a user and states that: 
 \begin{itemize}
-	\item Used inode numbers matches exactly
-	\item Files that is pointed by the same inode number have the same owner and have same length.
-	\item If the owner of those files is the user provided to the relation, then file contents are the same.
+	\item Each inode number is either used in both or free in both states.
+	\item Files that are pointed by the same inode number have the same owner and the same length. 
+	\item If the owner of those files is the provided user, then the file contents are the same as well.
 \end{itemize}
 
-Informally, our relation relates two states that only differ in the contents of the files that are not owned by the provided user parameter.
+Informally, our relation relates two states that only differ in the contents of the files that are not owned by the provided user parameter. 
 
 $R$ denotes a refinement relation between an abstraction and its implementation. $R(p)$ represents the refining implementation program, and $R(\approx)$ represents the derived equivalence relation between two implementation states. $R(\approx)$ is defined as 
 $$

@@ -15,9 +15,9 @@ else
 
 This code leaks the secret bit 50\% of the time and outputs a random bit 50\% of the time. It is also important to note that it can output 0 or 1 independently of the secret value. This way, any (state, return) pair represents a successful execution. 
 
-Let's say that two states are equivalent if they are the same for their non-secret parts. Since any pair of state and return value is a valid execution, it is possible to find another execution from a related state. This makes it satisfy the noninterference definition.
+Let’s say that two states are equivalent if they are the same for their non secret parts. Since any pair of state and return value is a valid execution, it is possible to find another execution from a related state. This makes it satisfy the noninterference definition. 
 
-Although the above program satisfies the noninterference definition, the secret bit can be determined via the observed frequency of repeated calls. When we look at the frequencies of output values, we can see that they correlate with the value of the secret bit.\\
+Although the above program satisfies the noninterference definition, the secret bit can be determined via the observed frequency of repeated calls. When we look at the frequencies of output values, we can see that they correlate with the value of the secret bit. \\
 
 \begin{tabular}{| c | c | c |}
 	\hline
@@ -29,18 +29,19 @@ Although the above program satisfies the noninterference definition, the secret 
 	\hline
 \end{tabular}\\
 
-Any adversary who can observe the output of the function sufficiently many times can infer the value of the secret bit with high confidence. These types of vulnerabilities are not limited to usage of randomization. They also manifest themselves when there are random events that can affect the behavior of the system. 
+Any adversary who can observe the output of the function sufficiently many times can infer the value of the secret bit with high confidence. These types of vulnerabilities are not limited to usage of randomization. They also manifest themselves when there are random events that can affect the behavior of the system.
+ 
+The main example we will consider is crash and recovery of a storage system. If the recovery behavior of the system is dependent on the secret data stored in it, then the system may contain a vulnerability of this kind.
 
-The main example we will consider is crash and recovery of a storage system. If the recovery behavior of the system is dependent on the secret data stored in it, then the system may contain a vulnerability of this kind. 
 
 \subsection{Unsafe Data Handling}
-The second problem observed involves handling the data in a potentially unsafe way. Many storage systems process the data provided to them before storing it. A potentially malicious developer can take advantage of this capability to leak information.
+The second problem observed involves handling the data in a potentially unsafe way. Many storage systems process the data provided to them before storing it. A potentially malicious developer can take advantage of this capability to leak information. 
 
-A classic example of this phenomenon is branching on confidential data. If not done carefully, it can result in leakage of confidential data. This does not mean that branching on confidential data should be avoided at all costs.
+A classic example of this phenomenon is branching on confidential data. If not done carefully, it can result in leakage of confidential data. This does not mean that branching on confidential data should be avoided at all costs. 
 
-Data deduplication in a storage system in a good example to demonstrate this effect. For this example, we will treat data contents as secret but metadata as public. Therefore a user noticing extra space savings is fine as long as he cannot infer contents of the data from this knowledge.
+Data deduplication in a storage system in a good example to demonstrate this effect. For this example, we will treat data contents as secret but metadata as public. Therefore a user noticing extra space savings is fine as long as he cannot infer contents of the data from this knowledge. 
 
-Deduplication requires branching on confidential data, which can be abused if not handled carefully. Consider the following obviously unsafe implementation:
+Deduplication requires branching on confidential data, which can be abused if not handled carefully. Consider the following obviously unsafe implementation: 
 
 \begin{lstlisting}
 write_to_txn(v)
@@ -51,12 +52,11 @@ write_to_txn(v)
     return true
 \end{lstlisting}
 
-This implementation allows an adversary to query the contents of the transaction. 
-A simple solution that can be considered to solve this problem is prohibiting branching control flow based on confidential data. This can be achieved by using a deeply embedded language that doesn't have an operation to compare secret data or treating secret data as an abstract object that can't be compared. Such approaches have the advantage 
-that any program written in such a language is noninterfering by construction. 
+This implementation allows an adversary to query the contents of the transaction. A simple solution that can be considered to solve this problem is prohibiting branching control flow based on confidential data. This can be achieved by using a deeply embedded language that doesn’t have an operation to compare secret data or treat secret data as an abstract object that cannot be compared. Such approaches have the advantage that any program written in such a language is noninterfering by construction. 
 
-It is quite a strong property but also a restrictive one which eliminates many possible efficient implementations.
+It is quite a strong property but also a restrictive one which eliminates many possible efficient implementations. 
 
-However, it is possible to implement a safe deduplicator. One way would be performing the process after the transaction is finalized but before committing it. Such a deferred deduplication will still branch on confidential data but without revealing it.
+However, it is possible to implement a safe deduplicator. One way would be performing the process after the transaction is finalized but before committing it. Such a deferred deduplication will still branch on confidential data but without revealing it. 
 
-An ideal solution would prohibit unsafe implementations while allowing the safe ones with as little constraint as possible.  
+An ideal solution would prohibit unsafe implementations while allowing the safe ones with as little constraint as possible. 
+

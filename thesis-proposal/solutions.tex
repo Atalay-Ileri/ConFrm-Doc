@@ -51,11 +51,11 @@ With this modified definition, we managed to state and prove a stronger version 
 
 RDNI's requirement for matching execution from any choice sequence ensures that no matter which nondeterministic branch is followed during the execution, there will be an indistinguishable execution from an equivalent state. This one-to-one correspondence implies that a state cannot be distinguished based on repeated observation of the system.
 
-One observation that can be made is that having an existing execution with the exactly same oracle is a sufficient but not necessary condition to prevent information leakage caused by relative frequency of outcomes. However, a stronger definition is required to ensure confidentiality in the traditional sense.
+One observation that can be made is that having an existing execution with the exact same oracle is a sufficient but not necessary condition to prevent information leakage caused by relative frequency of outcomes. However, a stronger definition is required to ensure confidentiality in the traditional sense. 
 
-Since ConFrm's model of nondeterminism contains events that their outcome is not directly observable (e.g. generation of a new key), and events that their outcome is observable (e.g. a system crash), contents of the confidential data shouldn't be inferable from the knowledge of what nondeterministic events happened.
+Since ConFrm’s model of nondeterminism contains events whose outcome is not directly observable (e.g. generation of a new key), and events whose outcome is observable (e.g. a system crash), contents of the confidential data shouldn’t be inferable from the knowledge of what nondeterministic events occurred. 
 
-By enforcing same-oracle executions, ConFrm treats all events as observable and ensures that, even with the full knowledge of nondeterministic events, an adversary cannot infer the contents of  confidential data.
+By enforcing same-oracle executions, ConFrm treats all events as observable and ensures that, even with the full knowledge of nondeterministic events, an adversary cannot infer the contents of confidential data. 
 
 If we revisit the random bit example, we can show that it indeed does not satisfy RDNI. For the choice sequence that chooses the first random bit as 1, there is no indistinguishable execution between the state where the secret bit is 0 and the state where the secret bit is 1.
 
@@ -83,9 +83,9 @@ Layering enables decoupling of system implementation and the proof technique tha
 Additionally, the operations and state of an abstraction are simpler than its underlying implementation, so proving their confidentiality becomes less complex as well. Also, implementations under a layer can be changed without affecting other proofs in the system.
 
 \subsection{NI Transfer via Simulation Proofs}
-It is known that, in the general nondeterministic case, noninterference is not preserved under simulation but is preserved under bisimulation. This creates a problem for abstraction techniques, which rely on simulation proofs to show the behavior of the implementation is a subset of the abstraction's. Since bisimulation is a stricter requirement than simulation, the amount of detail an abstraction can omit is significantly reduced. Furthermore, cannot introduce any new behavior or remove any existing behavior in an abstraction.
+It is known that, in the general nondeterministic case, noninterference is not preserved under simulation but is preserved under bisimulation. This creates a problem for abstraction techniques, which rely on simulation proofs to show the behavior of the implementation is a subset of the abstraction's. Since bisimulation is a stricter requirement than simulation, the amount of detail an abstraction can omit is significantly reduced. Furthermore, it cannot introduce any new behavior or remove any existing behavior in an abstraction.
 
-This restriction eliminates one of the best advantages of abstraction techniques, namely simplifying a system's model. On top of that, bisimulation proofs are much more cumbersome compared to simulation proofs. 
+This restriction eliminates one of the best advantages of abstraction techniques, namely simplifying a system's model. Additionally, bisimulation proofs are much more cumbersome compared to simulation proofs. 
 
 However, we show that RDNI is preserved under simulations combined with some auxiliary properties. This relieves proof burden of the developer significantly as well as increases the power of abstraction layers. This preservation makes it possible to use traditional abstraction techniques to construct complex systems as isolated, self-contained pieces.
 
