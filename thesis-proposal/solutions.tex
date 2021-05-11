@@ -6,17 +6,17 @@
 To address the problems stated above, we used 3 approaches:
 \begin{itemize}
 	\item Quantification of nondeterminism via tokens to solve unsafety from probability.
-	\item Abstraction via layer system to solve unsafe data handling.
+	\item Abstraction via a layer system to solve unsafe data handling.
 	\item Property transfer via simulation proofs to enable usage of layers while maintaining safety.
 \end{itemize}
 
 
 \subsection{Quantification of Nondeterminism}
-To be able to address unsafety coming from certain kinds of probabilistic behavior, we decided to quantize the nondeterminism. We enhanced our execution semantics with a sequence, such that, whenever a nondeterministic choice needs to be made during execution, the sequence will contain the option that will be chosen. For all possible execution traces a program have under general nondeterministic semantics, there should be a sequence that will guide the execution to that result. 
+To be able to address unsafety coming from certain kinds of probabilistic behavior, we decided to quantize the nondeterminism. We enhanced our execution semantics with a sequence, such that, whenever a nondeterministic choice needs to be made during execution, the sequence will contain the option that will be chosen. For every possible execution trace a program has under general nondeterministic semantics, there should be a sequence that will guide the execution to that result. 
 
 Our assumption is that nondeterminism in the system is independent of the contents of secret data but can depend on the public metadata. For example, size of the data can affect which nondeterministic choices are available but actual data cannot. This assumption is enforced as a proof obligation to use our technique.
 
-This approach have two benefits. First and most significant, it enables us to
+This approach has two benefits. First and most significant, it enables us to
 turn nondeterministic executions into relatively deterministic ones. 
 Relatively deterministic execution is defined as an execution trace that is 
 deterministic given a particular sequence of nondeterministic choices.
@@ -33,13 +33,13 @@ A relatively deterministic execution rule would be
 
 $$\forall\ s\ key,\ s  =[key]GenerateKey\Rightarrow (s, key)$$ 
 
-Difference between this rule and the previous one is subtle but crucial. 
-According to this rule, there is only one possible key you can get when you execute GenerateKey in this specific conditions.
+The difference between this rule and the previous one is subtle but crucial. 
+According to this rule, there is only one possible key you can get when you execute GenerateKey in these specific conditions.
 
-In some sense, it can be thought as which key you will get is predetermined by the state of the world. Program execution is deterministic relative to the state of the world.
+In some sense, it can be understood that which key you will get is predetermined by the state of the world. Program execution is deterministic relative to the state of the world.
 In contrast, you could get any key in the nondeterministic execution regardless of the state of the world.
 
-With this modified definition, we managed to state and prove a stronger version of noninterference: relatively deterministic noninterference (RDNI). RDNI requires that, for any sequence of nondeterministic choices, if there is a completed execution of a program from a state, then there exists another execution of a related program from a related state with same choice sequence.
+With this modified definition, we managed to state and prove a stronger version of noninterference: relatively deterministic noninterference (RDNI). RDNI requires that, for any sequence of nondeterministic choices, if there is a completed execution of a program from a state, then there exists another execution of a related program from a related state with the same choice sequence.
 
 \begin{figure}[H]
 	$\forall\ o\ s_1\ s_2\ s_1'\ v,$\\
@@ -51,11 +51,17 @@ With this modified definition, we managed to state and prove a stronger version 
 
 RDNI's requirement for matching execution from any choice sequence ensures that no matter which nondeterministic branch is followed during the execution, there will be an indistinguishable execution from an equivalent state. This one-to-one correspondence implies that a state cannot be distinguished based on repeated observation of the system.
 
-If we revisit random bit example, we can show that it is indeed does not satisfy RDNI. For the choice sequence that chooses first random bit as 1, there is no indistinguishable execution between the state where secret bit is 0 and the state where secret bit is 1.
+One observation that can be made is that having an existing execution with the exactly same oracle is a sufficient but not necessary condition to prevent information leakage caused by relative frequency of outcomes. However, a stronger definition is required to ensure confidentiality in the traditional sense.
 
-We also modified termination sensitivity and simulation definitions to integrate relative determinism. Modification of termination sensitivity was straightforward: executions are parameterized by the same oracle. Modifying simulation definition required a more complicated approach. We extended traditional refinements with oracle refinement relation.
+Since ConFrm's model of nondeterminism contains events that their outcome is not directly observable (e.g. generation of a new key), and events that their outcome is observable (e.g. a system crash), contents of the confidential data shouldn't be inferable from the knowledge of what nondeterministic events happened.
 
-Oracle refinement relation is parameterized by a user, an implementation state and an abstract program and will be denoted with $R_o$. We omit the user, state and program parameters in notation when it is clear from the context. Our modified relation is
+By enforcing same-oracle executions, ConFrm treats all events as observable and ensures that, even with the full knowledge of nondeterministic events, an adversary cannot infer the contents of  confidential data.
+
+If we revisit the random bit example, we can show that it indeed does not satisfy RDNI. For the choice sequence that chooses the first random bit as 1, there is no indistinguishable execution between the state where the secret bit is 0 and the state where the secret bit is 1.
+
+We also modified the termination sensitivity and simulation definitions to integrate relative determinism. Modification of termination sensitivity was straightforward: executions are parameterized by the same oracle. Modifying simulation definition required a more complicated approach. We extended traditional refinements with an oracle refinement relation.
+
+An oracle refinement relation is parameterized by a user, an implementation state and an abstract program and will be denoted with $R_o$. We omit the user, state and program parameters in notation when it is clear from the context. Our modified relation is
 
 \begin{figure}[H]
 $\forall\ o_i\ o_a\ i\ i'\ a\ v,$\\
@@ -68,21 +74,21 @@ $\exists a',\ a =[o_r] p\Rightarrow (a', v)\ \wedge\ i'\ R\ a'.$\\
 
 \subsection{Abstraction via layer system}
 Abstraction is a useful tool when dealing with large and complex software systems.
-It allows developers to hide implementation details of different modules of a software and purely think in terms of its abstract behavior.
+It allows developers to hide implementation details of different modules of a software program and think purely in terms of its abstract behavior.
 
-ConFrm's layer system streamlines the abstraction of implementations by providing tools that makes defining new DSLs and proving an implementation exhibits the same behavior with the defined abstraction easier. Once an implementation is abstracted away with a layer, it becomes completely opaque to the rest of the system. ConFrm guarantees that an implementation that simulates a confidential layer is also confidential.
+ConFrm's layer system streamlines the abstraction of implementations by providing tools that make defining new DSLs and proving an implementation exhibits the same behavior with the defined abstraction easier. Once an implementation is abstracted away with a layer, it becomes completely opaque to the rest of the system. ConFrm guarantees that an implementation that simulates a confidential layer is also confidential.
 
-Layering enables decoupling of system implementation and the proof technique that will be used to prove confidentiality of the system. It prevents the constraints that is associated with any particular proof technique to affect entire system. For example, DiskSec's sealed block approach prohibit branching on confidential data to provide substantial help in proof effort. However, this makes optimizations like checksum logging impossible to implement. Layering allows developers to write such implementations, abstract them away to create an interface that conforms to the restrictions of a proof approach then use said proof approach to prove confidentiality of their system.
+Layering enables decoupling of system implementation and the proof technique that will be used to prove confidentiality of the system. It prevents the constraints associated with any particular proof technique from affecting the  entire system. For example, DiskSec's sealed-block approach prohibit branching on confidential data to provide substantial help in proof effort. However, this makes optimizations like checksum logging impossible to implement. Layering allows developers to write such implementations, abstract them away to create an interface that conforms to the restrictions of a proof approach then use said proof approach to prove confidentiality of their system.
 
-Additionally, the operations and state of an abstraction are simpler than its underlying implementation, proving their confidentiality becomes less complex as well. Also, implementations under a layer can be changed without affecting other proofs in the system.
+Additionally, the operations and state of an abstraction are simpler than its underlying implementation, so proving their confidentiality becomes less complex as well. Also, implementations under a layer can be changed without affecting other proofs in the system.
 
 \subsection{NI Transfer via Simulation Proofs}
-It is known that, in general nondeterministic case, NI is not preserved under simulation, but preserved under bisimulation. This creates a problem for abstraction techniques, which relies on simulation proofs to show the behavior of implementation is a subset of the abstraction's. Since bisimulation is a stricter requirement than simulation, the amount of details an abstraction can omit is significantly reduced. Furthermore, you cannot introduce any new behavior or remove any existing behavior in an abstraction.
+It is known that, in the general nondeterministic case, noninterference is not preserved under simulation but is preserved under bisimulation. This creates a problem for abstraction techniques, which rely on simulation proofs to show the behavior of the implementation is a subset of the abstraction's. Since bisimulation is a stricter requirement than simulation, the amount of detail an abstraction can omit is significantly reduced. Furthermore, cannot introduce any new behavior or remove any existing behavior in an abstraction.
 
 This restriction eliminates one of the best advantages of abstraction techniques, namely simplifying a system's model. On top of that, bisimulation proofs are much more cumbersome compared to simulation proofs. 
 
-However we show that RDNI is preserved under simulations combined with some auxiliary properties. This relieves proof burden of the developer significantly as well as increases power of abstraction layers. This preservation makes it possible to use traditional abstraction techniques to construct complex systems as isolated, self contained pieces.
+However, we show that RDNI is preserved under simulations combined with some auxiliary properties. This relieves proof burden of the developer significantly as well as increases the power of abstraction layers. This preservation makes it possible to use traditional abstraction techniques to construct complex systems as isolated, self-contained pieces.
 
 Our core theorem states that, if an abstract layer is RDNI w.r.t. $\approx$, then an implementation layer that refines the abstract layer is RDNI w.r.t. $R(\approx)$.  
 
-To be able to employ the theorem in termination-sensitive way, one needs to prove that programs he is reasoning about are termination sensitive with respect to $R(\approx)$.
+To be able to employ the theorem in termination-sensitive way, one needs to prove that programs he is reasoning about are termination-sensitive with respect to $R(\approx)$.

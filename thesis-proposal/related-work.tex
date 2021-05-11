@@ -1,16 +1,16 @@
 \section{Related Work}
 
-ConFrm and ConFs builds on a diverse body of prior work. We will explain these works throughout this chapter. 
+ConFrm and ConFs build on a diverse body of prior work. We will explain these works throughout this section. 
 
-\paragraph{Noninterference properties.} There is a significant work on formalizing noninterference properties [19, 25, 26, 29, 30, 32, disksec]. ConFrm's relatively deterministic noninterference builds on top of this existing work. 
+\paragraph{Noninterference properties.} There is  significant work on formalizing noninterference properties [19, 25, 26, 29, 30, 32, disksec]. ConFrm's relatively deterministic noninterference builds on top of this existing work. 
 
-ConFrm's definition is different from previous body of work by how it treats nondeterminism in its formalism. ConFrm takes a more fine grained approach on relating nondeterministic executions by requiring a strong coupling between executions for each nondeterministic execution branch.
+ConFrm's definition is different from the previous body of work in how it treats nondeterminism in its formalism. ConFrm takes a more fine-grained approach in relating nondeterministic executions by requiring a strong coupling between executions for each nondeterministic execution branch.
 
 %rewrite this for paper
 \paragraph{Machine-checked security in systems.} 
 Several prior
 projects have proven security (and, specifically, confidentiality) properties about their system implementations:
-seL4 [23, 26], CertiKOS [15], Ironclad [20] and DiskSec[??]. For
+seL4 [23, 26], CertiKOS [15], Ironclad [20] and DiskSec [??]. For
 seL4 and CertiKOS, the theorems prove complete isolation: CertiKOS requires disabling IPC to prove its security
 theorems, and seL4’s security theorem requires disjoint
 sets of capabilities. In the context of a file system, complete isolation is not possible: one of the main goals of a
@@ -21,30 +21,29 @@ details in specifications.
 
 Ironclad proves that several applications, such as a notary service and a password-hashing application, do not
 disclose their own secrets (e.g., a private key), formulated as noninterference. Also using noninterference, Komodo [17] reasons about confidential data in an enclave
-and showing that an adversary cannot learn the confidential data. Ironclad and Komodo’s approach cannot specify
+and shows that an adversary cannot learn the confidential data. Ironclad and Komodo’s approach cannot specify
 or prove a file system: both systems have no notion of a
-calling principal or support for multiple users and there
+calling principal or support for multiple users, and there
 is no possibility of returning confidential data to some
 principals (but not others). Finally, there is no support for
 nondeterministic crashes.
 
-DiskSec supports nondeterministic crashes, discretionary access control and shared data structures. However it lacks support for branching on confidential data (e.g. hash based logging), abstraction layers and provides weaker guarantees for crashes.
+DiskSec supports nondeterministic crashes, discretionary access control and shared data structures. However, it lacks support for branching on confidential data (e.g. hash-based logging), abstraction layers and provides weaker guarantees for crashes.
 
 %rewrite this for paper
 \paragraph{Information flow and type systems.} 
-Another approach ensuring confidentiality is to rely on type systems. Advantage of this approach is that type checking is can be automated to reduce proof load for the developer.
+Another approach ensuring confidentiality is to rely on type systems. An advantage of this approach is that type checking can be automated to reduce proof load for the developer.
 
 Type systems and static-analysis algorithms, as with
-Jif’s labels [27, 28], the UrFlow analysis [14], have been
+Jif’s labels [27, 28] and the UrFlow analysis [14], have been
 developed to reason about information-flow properties of
 application code. However, these analyzers are static and
 would be hard to use for reasoning about data structures
 inside of a file system (such as a write-ahead log or a
 buffer cache) that contain data from different users.
 
-SeLoc[??] uses double weakest preconditions to prove noninterference for fine grained concurrent programs. It is built on top of IRIS[??], a separation logic based framework to prove correctness of fine grained concurrent programs. It provides a confidentiality ensuring type system and a wide array of tools to the developers. However, employing SeLoc requires using IRIS which adds a substantial entry barrier. Conversely, ConFrm is standalone and lightweight but doesn't offer full array of tools SeLoc offers.
+SeLoc[??] uses double weakest preconditions to prove noninterference for fine-grained concurrent programs. It is built on top of IRIS[??], a separation logic-based framework to prove correctness of fine-grained concurrent programs. It provides a confidentiality-ensuring type system and a wide array of tools to the developers. However, employing SeLoc requires using IRIS which adds a substantial entry barrier. Conversely, ConFrm is standalone and lightweight but doesn't offer full array of tools SeLoc offers.
 
-%write this
 \paragraph{Sequential composability and confidentiality preserving refinements.} 
 Since it is known that noninterference is not preserved in the general case[??],
 there is a body of work that tries to identify the conditions that makes refinements noninterference preserving.
