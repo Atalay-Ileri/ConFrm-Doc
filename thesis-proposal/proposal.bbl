@@ -1,0 +1,103 @@
+\begin{thebibliography}{10}
+
+\bibitem{baumann}
+{\sc Baumann, C., Dam, M., Guanciale, R., and Nemati, H.}
+\newblock On compositional information flow aware refinement.
+\newblock In {\em 2021 2021 IEEE 34th Computer Security Foundations Symposium
+  (CSF)\/} (Los Alamitos, CA, USA, jun 2021), IEEE Computer Society,
+  pp.~79--94.
+
+\bibitem{15}
+{\sc Costanzo, D., Shao, Z., and Gu, R.}
+\newblock End-to-end verification of information-flow security for c and
+  assembly programs.
+\newblock {\em SIGPLAN Not. 51}, 6 (June 2016), 648–664.
+
+\bibitem{17}
+{\sc Ferraiuolo, A., Baumann, A., Hawblitzel, C., and Parno, B.}
+\newblock Komodo: Using verification to disentangle secure-enclave hardware
+  from software.
+\newblock In {\em Proceedings of the 26th Symposium on Operating Systems
+  Principles\/} (2017), pp.~287--305.
+
+\bibitem{seloc}
+{\sc Frumin, D., Krebbers, R., and Birkedal, L.}
+\newblock Compositional non-interference for fine-grained concurrent programs.
+\newblock {\em arXiv preprint arXiv:1910.00905\/} (2019).
+
+\bibitem{19}
+{\sc Goguen, J.~A., and Meseguer, J.}
+\newblock Security policies and security models.
+\newblock In {\em 1982 IEEE Symposium on Security and Privacy\/} (1982),
+  pp.~11--11.
+
+\bibitem{20}
+{\sc Hawblitzel, C., Howell, J., Lorch, J.~R., Narayan, A., Parno, B., Zhang,
+  D., and Zill, B.}
+\newblock Ironclad apps: End-to-end security via automated full-system
+  verification.
+\newblock In {\em 11th {USENIX} Symposium on Operating Systems Design and
+  Implementation ({OSDI} 14)\/} (Broomfield, CO, Oct. 2014), {USENIX}
+  Association, pp.~165--181.
+
+\bibitem{disksec}
+{\sc Ileri, A., Chajed, T., Chlipala, A., Kaashoek, F., and Zeldovich, N.}
+\newblock Proving confidentiality in a file system using disksec.
+\newblock In {\em 13th {USENIX} Symposium on Operating Systems Design and
+  Implementation ({OSDI} 18)\/} (Carlsbad, CA, Oct. 2018), {USENIX}
+  Association, pp.~323--338.
+
+\bibitem{iris}
+{\sc JUNG, R., KREBBERS, R., JOURDAN, J.-H., BIZJAK, A., BIRKEDAL, L., and
+  DREYER, D.}
+\newblock Iris from the ground up: A modular foundation for higher-order
+  concurrent separation logic.
+\newblock {\em Journal of Functional Programming 28\/} (2018), e20.
+
+\bibitem{23}
+{\sc Klein, G., Andronick, J., Elphinstone, K., Murray, T., Sewell, T.,
+  Kolanski, R., and Heiser, G.}
+\newblock Comprehensive formal verification of an os microkernel.
+\newblock {\em ACM Trans. Comput. Syst. 32}, 1 (Feb. 2014).
+
+\bibitem{25}
+{\sc Mclean, J.}
+\newblock Proving noninterference and functional correctness using traces.
+\newblock {\em Journal of Computer Security 1\/} (1992), 37--58.
+
+\bibitem{26}
+{\sc Murray, T., Matichuk, D., Brassil, M., Gammie, P., Bourke, T., Seefried,
+  S., Lewis, C., Gao, X., and Klein, G.}
+\newblock sel4: From general purpose to a proof of information flow
+  enforcement.
+\newblock In {\em 2013 IEEE Symposium on Security and Privacy\/} (2013),
+  pp.~415--429.
+
+\bibitem{29}
+{\sc Popescu, A., H{\"o}lzl, J., and Nipkow, T.}
+\newblock Proving concurrent noninterference.
+\newblock In {\em Certified Programs and Proofs\/} (Berlin, Heidelberg, 2012),
+  C.~Hawblitzel and D.~Miller, Eds., Springer Berlin Heidelberg, pp.~109--125.
+
+\bibitem{30}
+{\sc Roscoe, A.}
+\newblock Csp and determinism in security modelling.
+\newblock In {\em Proceedings 1995 IEEE Symposium on Security and Privacy\/}
+  (1995), pp.~114--127.
+
+\bibitem{32}
+{\sc Rushby, J.~M.}
+\newblock Proof of separability a verification technique for a class of
+  security kernels.
+\newblock In {\em International Symposium on Programming\/} (Berlin,
+  Heidelberg, 1982), M.~Dezani-Ciancaglini and U.~Montanari, Eds., Springer
+  Berlin Heidelberg, pp.~352--367.
+
+\bibitem{sun}
+{\sc Sun, C., Xi, N., and Ma, J.}
+\newblock Enforcing generalized refinement-based noninterference for secure
+  interface composition.
+\newblock In {\em 2017 IEEE 41st Annual Computer Software and Applications
+  Conference (COMPSAC)\/} (2017), vol.~1, pp.~586--595.
+
+\end{thebibliography}

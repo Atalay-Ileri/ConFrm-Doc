@@ -25,35 +25,39 @@ A simple example of this is execution of an operation that generates an encrypti
 
 A nondeterministic execution rule would be
 
-$$\forall\ s\ key,\ s  =GenerateKey\Rightarrow (s, key)$$ 
+$$\forall\ s\ key,\ s  \xLongrightarrow{GenerateKey} (s, key)$$ 
 
 This rule states that when we run GenerateKey we can get any key as a result of the execution.
 
 A relatively deterministic execution rule would be
 
-$$\forall\ s\ key,\ s  =[key]GenerateKey\Rightarrow (s, key)$$ 
+$$\forall\ s\ key,\ s  \xLongrightarrow{[key]GenerateKey} (s, key)$$ 
 
-The difference between this rule and the previous one is subtle but crucial. 
-According to this rule, there is only one possible key you can get when you execute GenerateKey in these specific conditions.
+Notation $s \xLongrightarrow{[t_1, \dots, t_n]p} (s', r)$ denotes the execution of a program $p$ in the same way as $s \xLongrightarrow{p} (s', r)$, except
+\begin{itemize}
+	\item $p$ makes exactly $n$ deterministic choices, and
+	\item $p$ "chooses" $t_i$ for its $i$'th nondeterministic choice.
+\end{itemize}
 
-In some sense, it can be understood that which key you will get is predetermined by the state of the world. Program execution is deterministic relative to the state of the world.
-In contrast, you could get any key in the nondeterministic execution regardless of the state of the world.
+The difference between the relatively deterministic rule and the nondeterministic rule is subtle but crucial. 
+According to the relatively deterministic rule, there is only one possible key that can be returned when GenerateKey is executed in these specific conditions.
+
+In some sense, it can be understood that which key will be returned is predetermined by the state of the world. In other words, program execution is deterministic relative to the state of the world.
+In contrast, any possible key can be returned in the nondeterministic execution regardless of the state of the world.
 
 With this modified definition, we managed to state and prove a stronger version of noninterference: relatively deterministic noninterference (RDNI). RDNI requires that, for any sequence of nondeterministic choices, if there is a completed execution of a program from a state, then there exists another execution of a related program from a related state with the same choice sequence.
 
-\begin{figure}[H]
-	$\forall\ o\ s_1\ s_2\ s_1'\ v,$\\
-	$s_1\approx s_2 \rightarrow$\\
-	$s_1 =[o]p_1\Rightarrow (s_1', v) \rightarrow$\\
-	$\exists s_2',\ s_2 =[o]p_2\Rightarrow (s_2', v)\ \wedge\ s_1'\approx s_2'.$\\
-	\caption{Relatively Deterministic Noninterference}
-\end{figure}
+\subsubsection*{Relatively Deterministic Noninterference}
+$\forall\ o\ s_1\ s_2\ s_1'\ v,$\\[2pt]
+$s_1\approx s_2 \rightarrow$\\[2pt]
+$s_1 \xLongrightarrow{[o]p_1} (s_1', v) \rightarrow$\\[2pt]
+$\exists s_2',\ s_2 \xLongrightarrow{[o]p_2} (s_2', v)\ \wedge\ s_1'\approx s_2'.$\\
 
 RDNI's requirement for matching execution from any choice sequence ensures that no matter which nondeterministic branch is followed during the execution, there will be an indistinguishable execution from an equivalent state. This one-to-one correspondence implies that a state cannot be distinguished based on repeated observation of the system.
 
 One observation that can be made is that having an existing execution with the exact same oracle is a sufficient but not necessary condition to prevent information leakage caused by relative frequency of outcomes. However, a stronger definition is required to ensure confidentiality in the traditional sense. 
 
-Since ConFrm’s model of nondeterminism contains events whose outcome is not directly observable (e.g. generation of a new key), and events whose outcome is observable (e.g. a system crash), contents of the confidential data shouldn’t be inferable from the knowledge of what nondeterministic events occurred. 
+Since ConFrm’s model of nondeterminism contains events whose outcome is not directly observable (e.g., generation of a new key), and events whose outcome is observable (e.g., a system crash), contents of the confidential data shouldn’t be inferable from the knowledge of what nondeterministic events occurred. 
 
 By enforcing same-oracle executions, ConFrm treats all events as observable and ensures that, even with the full knowledge of nondeterministic events, an adversary cannot infer the contents of confidential data. 
 
@@ -61,16 +65,16 @@ If we revisit the random bit example, we can show that it indeed does not satisf
 
 We also modified the termination sensitivity and simulation definitions to integrate relative determinism. Modification of termination sensitivity was straightforward: executions are parameterized by the same oracle. Modifying simulation definition required a more complicated approach. We extended traditional refinements with an oracle refinement relation.
 
-An oracle refinement relation is parameterized by a user, an implementation state and an abstract program and will be denoted with $R_o$. We omit the user, state and program parameters in notation when it is clear from the context. Our modified relation is
+An oracle refinement relation is parameterized by a user, an implementation state and an abstract program and will be denoted with $R_o$. We omit the user, state and program parameters in notation when it is clear from the context. Our modified definition is
+\newpage
+\subsubsection*{Simulation with Oracles}
+$\forall\ o_i\ o_a\ i\ i'\ a\ v,$\\[2pt]
+$i\ R\ a \rightarrow$\\[2pt]
+$o_i\ R_o\ o_a \rightarrow$\\[2pt]
+$i \xLongrightarrow{[o_i] R(p)} (i', v) \rightarrow$\\[2pt]
+$\exists a',\ a \xLongrightarrow{[o_a] p} (a', v)\ \wedge\ i'\ R\ a'.$\\
 
-\begin{figure}[H]
-$\forall\ o_i\ o_a\ i\ i'\ a\ v,$\\
-$i\ R\ a \rightarrow$\\
-$o_i\ R_o\ o_a \rightarrow$\\
-$i =[o_i] R(p)\Rightarrow (i', v) \rightarrow$\\
-$\exists a',\ a =[o_r] p\Rightarrow (a', v)\ \wedge\ i'\ R\ a'.$\\
-	\caption{Simulation with Oracles}
-\end{figure}
+Above definition states that if $(i, o_i, R(p))$ is a refinement of $(a, o_a, p)$ and $[o_i]R(p)$ takes $i$ to $i'$ and returns $v$, then there exists an abstract state $a'$ such that, $[o_a]p$ takes $a$ to $a'$ and returns $v$, and $i'$ is a refinement of $a'$.
 
 \subsection{Abstraction via layer system}
 Abstraction is a useful tool when dealing with large and complex software systems.
@@ -82,12 +86,12 @@ Layering enables decoupling of system implementation and the proof technique tha
 
 Additionally, the operations and state of an abstraction are simpler than its underlying implementation, so proving their confidentiality becomes less complex as well. Also, implementations under a layer can be changed without affecting other proofs in the system.
 
-\subsection{NI Transfer via Simulation Proofs}
 It is known that, in the general nondeterministic case, noninterference is not preserved under simulation but is preserved under bisimulation. This creates a problem for abstraction techniques, which rely on simulation proofs to show the behavior of the implementation is a subset of the abstraction's. Since bisimulation is a stricter requirement than simulation, the amount of detail an abstraction can omit is significantly reduced. Furthermore, it cannot introduce any new behavior or remove any existing behavior in an abstraction.
 
+\subsection{NI Transfer via Simulation Proofs}
 This restriction eliminates one of the best advantages of abstraction techniques, namely simplifying a system's model. Additionally, bisimulation proofs are much more cumbersome compared to simulation proofs. 
 
-However, we show that RDNI is preserved under simulations combined with some auxiliary properties. This relieves proof burden of the developer significantly as well as increases the power of abstraction layers. This preservation makes it possible to use traditional abstraction techniques to construct complex systems as isolated, self-contained pieces.
+We show that RDNI is preserved under simulations combined with some auxiliary properties. This relieves proof burden of the developer significantly as well as increases the power of abstraction layers. This preservation makes it possible to use traditional abstraction techniques to construct complex systems as isolated, self-contained pieces.
 
 Our core theorem states that, if an abstract layer is RDNI w.r.t. $\approx$, then an implementation layer that refines the abstract layer is RDNI w.r.t. $R(\approx)$.  
 

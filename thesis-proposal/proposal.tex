@@ -1,4 +1,7 @@
 \documentclass[onecolumn]{paper}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{extarrows}
 \usepackage{tabularx}
 \usepackage{color}
 \usepackage{listings}
@@ -7,6 +10,8 @@
 \usepackage{caption}
 \usepackage{subcaption}
 \usepackage{float}
+\usepackage{setspace}
+\onehalfspacing
 
 \newcolumntype{L}{>{\raggedright\arraybackslash}X}
 
@@ -14,13 +19,18 @@
 \author{Atalay Mert Ileri \and Frans Kaashoek \and Nickolai Zeldovich}
 
 \begin{document}
-\maketitle
+%\maketitle
+\input{title-page}
 \input{introduction}
 \input{related-work}
 \input{definitions}
 \input{problems}
 \input{solutions}
 \input{contributions}
+\input{limitations}
 \input{timeline}
 %\include{proof-figures}
+
+\bibliographystyle{acm}
+\bibliography{bibliography}
 \end{document}

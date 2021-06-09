@@ -1,42 +1,48 @@
 \section{Definitions and Notation}
-Next we will present standard notations and definitions that are used in the rest of the text. All the definitions presented here are for the concepts that are commonly found in other works. Since there are multiple definitions for noninterference, termination sensitivity, and simulation in the literature, ones that we used are also given below. We modified termination sensitivity and noninterference definitions to be parameterized over two programs, instead of one. The reason for this is that, in the context of this work, a program refers to a routine and its inputs. Aforementioned modification allowed us to reason about the same routine with different inputs. Any definition or notation that is used for new contributions of the work will be introduced throughout the proposal.
+This section presents standard notations and definitions that are used in the rest of the text. All the definitions presented here are for the concepts that are commonly found in other works. Since there are multiple definitions for noninterference, termination sensitivity, and simulation in the literature, we state the ones used in ConFrm. We modified termination sensitivity and noninterference definitions to be parameterized over two programs, instead of one. The reason for this is that, in the context of this work, a program refers to a routine and its inputs. Aforementioned modification allowed us to reason about the same routine with different inputs. Any definition or notation that is used for new contributions of the work will be introduced throughout the proposal.
 
 We use $a$ and $i$ to denote abstraction and implementation states respectively, and use $s$ when the distinction is irrelevant.
-$s =p\Rightarrow (s', v)$ denotes the execution of program $p$ from state $s$ that results in state $s'$ and returns $v$. $\approx$ is used to represent an equivalence relation between two abstract states. 
+$s \xLongrightarrow{p} (s', v)$ denotes the execution of program $p$ from state $s$ that results in state $s'$ and returns $v$. $\approx$ is used to represent an equivalence relation between two abstract states. 
 
 The equivalence relation that is used in ConFs is parameterized by a user and states that: 
 \begin{itemize}
 	\item Each inode number is either used in both or free in both states.
-	\item Files that are pointed by the same inode number have the same owner and the same length. 
+	\item Files that are identified by the same inode number have the same owner and the same length. 
 	\item If the owner of those files is the provided user, then the file contents are the same as well.
 \end{itemize}
 
 Informally, our relation relates two states that only differ in the contents of the files that are not owned by the provided user parameter. 
 
-$R$ denotes a refinement relation between an abstraction and its implementation. $R(p)$ represents the refining implementation program, and $R(\approx)$ represents the derived equivalence relation between two implementation states. $R(\approx)$ is defined as 
-$$
-i_1\ R(\approx)\ i_2 := \exists\ a_1\ a_2,\ i_1\ R\ a_1\ \wedge\ i_2\ R\ a_2\ \wedge\ a_1 \approx a_2
-$$
+$R$ denotes a refinement relation between an abstraction and its implementation. $R(p)$ represents the refining implementation program, and $R(\approx)$ represents the derived equivalence relation between two implementation states. $R(\approx)$ is defined as\\
+ 
+\begin{center}
+	\begin{tabular}{l}
+		$i_1\ R(\approx)\ i_2 :=$\\
+		$\quad \exists\ a_1\ a_2,$\\
+		$\ i_1\ R\ a_1\ \wedge\ i_2\ R\ a_2\ \wedge\ a_1 \approx a_2$
+	\end{tabular}
+\end{center}
+
 
 
 \subsubsection*{Noninterference}
 
-$\forall\ s_1\ s_2\ s_1'\ v,$\\
-$s_1\approx s_2 \rightarrow$\\
-$s_1 =p_1\Rightarrow (s_1', v) \rightarrow$\\
-$\exists s_2',\ s_2 =p_2\Rightarrow (s_2', v)\ \wedge\ s_1'\approx s_2'.$
+$\forall\ s_1\ s_2\ s_1'\ v,$\\[2pt]
+$s_1\approx s_2 \rightarrow$\\[2pt]
+$s_1 \xLongrightarrow{p_1} (s_1', v) \rightarrow$\\[2pt]
+$\exists s_2',\ s_2 \xLongrightarrow{p_2} (s_2', v)\ \wedge\ s_1'\approx s_2'.$
 
 \subsubsection*{Termination Sensitivity}
 
-$\forall\ s_1\ s_2\ s_1'\ v,$\\
-$s_1\approx s_2 \rightarrow$\\
-$s_1 =p_1\Rightarrow (s_1', v) \rightarrow$\\
-$\exists s_2'\ v',\ s_2 =p_2\Rightarrow (s_2', v').$
+$\forall\ s_1\ s_2\ s_1'\ v,$\\[2pt]
+$s_1\approx s_2 \rightarrow$\\[2pt]
+$s_1 \xLongrightarrow{p_1} (s_1', v) \rightarrow$\\[2pt]
+$\exists s_2'\ v',\ s_2 \xLongrightarrow{p_2} (s_2', v').$
 
 \subsubsection*{Simulation}
 
-$\forall\ i\ i'\ a\ v,$\\
-$i\ R\ a \rightarrow$\\
-$i =R(p)\Rightarrow (i', v) \rightarrow$\\
-$\exists a',\ a =p\Rightarrow (a', v)\ \wedge\ i'\ R\ a'.$
+$\forall\ i\ i'\ a\ v,$\\[2pt]
+$i\ R\ a \rightarrow$\\[2pt]
+$i \xLongrightarrow{R(p)} (i', v) \rightarrow$\\[2pt]
+$\exists a',\ a \xLongrightarrow{p} (a', v)\ \wedge\ i'\ R\ a'.$
 

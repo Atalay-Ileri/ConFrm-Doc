@@ -29,7 +29,7 @@ Although the above program satisfies the noninterference definition, the secret 
 	\hline
 \end{tabular}\\
 
-Any adversary who can observe the output of the function sufficiently many times can infer the value of the secret bit with high confidence. These types of vulnerabilities are not limited to usage of randomization. They also manifest themselves when there are random events that can affect the behavior of the system.
+Any adversary who can observe the output of the function sufficiently many times can infer the value of the secret bit with high confidence. These types of vulnerabilities are not limited to usage of randomization. They also manifest themselves when there are random events such as crashes that can affect the behavior of the system.
  
 The main example we will consider is crash and recovery of a storage system. If the recovery behavior of the system is dependent on the secret data stored in it, then the system may contain a vulnerability of this kind.
 
@@ -44,19 +44,20 @@ Data deduplication in a storage system in a good example to demonstrate this eff
 Deduplication requires branching on confidential data, which can be abused if not handled carefully. Consider the following obviously unsafe implementation: 
 
 \begin{lstlisting}
-write_to_txn(v)
-  if (v is in txn)
+write_to_txn(a, v)
+  if ((a, v) is in txn)
     return false
   else
-    add_to_txn(v)
+    add_to_txn(a, v)
     return true
 \end{lstlisting}
 
-This implementation allows an adversary to query the contents of the transaction. A simple solution that can be considered to solve this problem is prohibiting branching control flow based on confidential data. This can be achieved by using a deeply embedded language that doesn’t have an operation to compare secret data or treat secret data as an abstract object that cannot be compared. Such approaches have the advantage that any program written in such a language is noninterfering by construction. 
+Above code snippet takes an address and a data value and checks if the pair is already in the transaction. If it is in the transaction, then it returns false and does nothing. If it is not, it adds it to the transaction. 
+
+This implementation avoids writing the same pairs multiple times. However, it also allows an adversary to query the contents of the transaction for any address. A simple solution that can be considered to solve this problem is prohibiting branching control flow based on confidential data. This can be achieved by using a deeply embedded language that doesn’t have an operation to compare secret data or treat secret data as an abstract object that cannot be compared. Such approaches have the advantage that any program written in such a language is noninterfering by construction. 
 
 It is quite a strong property but also a restrictive one which eliminates many possible efficient implementations. 
 
 However, it is possible to implement a safe deduplicator. One way would be performing the process after the transaction is finalized but before committing it. Such a deferred deduplication will still branch on confidential data but without revealing it. 
 
 An ideal solution would prohibit unsafe implementations while allowing the safe ones with as little constraint as possible. 
-
