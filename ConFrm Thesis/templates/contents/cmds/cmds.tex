@@ -1,0 +1,88 @@
+\renewcommand{\ttdefault}{pxtt}
+
+\newcommand{\sys}{\textsc{DiskSec}\@\xspace}
+\newcommand{\sfscq}{\textsc{SFSCQ}\@\xspace}
+
+\newcommand{\URL}{\url}
+\newcommand{\cc}[1]{\mbox{\smaller[0.5]\texttt{#1}}}
+
+\clubpenalty=10000
+\widowpenalty=10000
+
+\hyphenation{Fscq-Log}
+\hyphenation{Certi-KOS}
+\hyphenation{Applied-Unsync}
+\hyphenation{i-node}
+\hyphenation{Log-API}
+\hyphenation{DFSCQ}
+\hyphenation{SFSCQ}
+\hyphenation{Sym-Diff}
+
+\input{templates/contents/cmds/fmt}
+
+\setlength{\abovedisplayskip}{0pt}
+\setlength{\abovedisplayshortskip}{0pt}
+\setlength{\belowdisplayskip}{0pt}
+\setlength{\belowdisplayshortskip}{0pt}
+\setlength{\jot}{0pt}
+
+\setlength{\textfloatsep}{10pt plus 2pt minus 4pt}
+
+\newcommand{\specfont}{\fontsize{9}{11}\selectfont}
+
+%\numberwithin{equation}{section}
+
+%\theoremstyle{definition}
+\newtheorem{thm}{Theorem}
+\newcommand{\thmautorefname}{Theorem}
+%\newaliascnt{lemma}{thm}
+%\newtheorem{lemma}[lemma]{Lemma}
+%\aliascntresetthe{lemma}
+%\newtheorem{lemma}{Lemma}[thm]
+\newcommand{\lemmaautorefname}{Lemma}
+
+\def\Snospace~{\S{}}
+%\renewcommand*\sectionautorefname{\Snospace}
+%\renewcommand{\subsectionautorefname}{\Snospace}
+%\renewcommand{\subsubsectionautorefname}{\Snospace}
+
+\newif\ifdraft\drafttrue
+\newif\ifnotes\notestrue
+\ifdraft\else\notesfalse\fi
+
+% Define \XXX, \XXX[notes] and \XXX[author][notes]
+\definecolor{xxxcolor}{rgb}{0.8,0,0}
+\makeatletter
+\long\def\XXX{\@ifnextchar[{\@XXX}{\@XXX[]}}
+\long\def\@XXX[#1]{\@ifnextchar[{\@@@XXX{#1}}{\@@XXX{#1}}}
+\ifnotes
+% Show XXX comments
+\long\def\@@XXX#1{{\color{xxxcolor} XXX #1}\xspace}
+\long\def\@@@XXX#1[#2]{{\color{xxxcolor} XXX (#1) #2}\xspace}
+\else
+% Hide XXX comments
+\long\def\@@XXX#1{\ignorespaces}
+\long\def\@@@XXX#1[#2]{\ignorespaces}
+\fi
+\makeatother
+
+%% Ensure ligatures (e.g., ``fine official flag'') can be copy/pasted from PDF.
+\input{glyphtounicode}
+\pdfgentounicode=1
+
+%\bibpunct[: ]{[}{]}{,}{n}{XXX}{XXX}
+
+\newcommand{\ind}{\hspace{0.5cm}}
+
+\renewcommand{\topfraction}{0.95}
+\renewcommand{\dbltopfraction}{0.95}
+\renewcommand{\bottomfraction}{0.95}
+\renewcommand{\textfraction}{0.05}
+\renewcommand{\floatpagefraction}{0.95}
+\renewcommand{\dblfloatpagefraction}{0.95}
+\setcounter{topnumber}{10}
+\setcounter{bottomnumber}{10}
+\setcounter{totalnumber}{10}
+\setcounter{dbltopnumber}{10}
+
+%\input{fig/tikz}

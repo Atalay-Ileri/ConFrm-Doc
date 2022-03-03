@@ -1,0 +1,130 @@
+\chapter{ConFrm}
+
+\section{Overview}
+
+\section{Oraclizition of Nondeterminism}
+- Explain tokens, oracles and relatively deterministic execution.
+
+- Give definition for RDNI
+
+\section{Layers and Abstraction}
+
+- Explain cores, and automatic addition of state monad.
+
+- Explain automatic horizontal composition.
+
+- Explain simulations and how they are extended with oracles.
+
+\section{Property Transfers}
+
+
+\subsection{RDNI transfer}
+- Required properties
+
+-- SimulationForProgram
+    
+-- abstract oracles exist wrt (AOE)
+
+-- oracle refines same from related (ORS)
+
+-- exec compiled preserves validity (Trivial in our case because all of our top states are valid)
+
+-- Termination Sensitive (TS)
+
+\subsection{ORS}
+-- have same structure (program flow equivalence) (HSS)
+
+\begin{minted}{coq}
+Lemma token_refines_finished_prefix_eq:
+forall ...,
+
+token_refines u s1 op1 grs1 o1 t1 ->
+token_refines u s2 op2 grs2 o2 t2 ->
+
+exec u s1 o1 (compile op1) (Finished s1' r1) ->
+exec u s2 o2 (compile op2) (Finished s2' r2) ->
+
+have_same_structure op1 op2 -> 
+
+(exists s1a,refines s1 s1a) ->
+(exists s2a, refines s2 s2a) ->
+
+one_prefix_of_other o1 o2 ->
+o1 = o2 /\ t1 = t2.
+\end{minted}
+
+\begin{minted}{coq}
+Lemma token_refines_crashed_prefix_eq:
+forall ...,
+
+token_refines u s1 op1 grs1 o1 t1 ->
+token_refines u s2 op2 grs2 o2 t2 ->
+
+exec u s1 o1 (compile op1) (Crashed s1') ->
+exec u s2 o2 (compile op2) (Crashed s2') ->
+
+have_same_structure op1 op2 -> 
+
+(exists s1a,refines s1 s1a) ->
+(exists s2a, refines s2 s2a) ->
+
+one_prefix_of_other o1 o2 ->
+t1 = t2.
+\end{minted}
+
+\begin{minted}{coq}
+Lemma oracle_refines_impl_eq:
+forall ...,
+    oracle_refines u s1 p1 imp_reboot_f o1 oa1 ->
+    oracle_refines u s2 p2 imp_reboot_f o2 oa2 ->
+    
+    refines s1 s1a ->
+    refines s2 s2a ->
+    
+    exec u o1 s1 (compile p1) (Finished s1' r1) ->
+    exec u o2 s2 (compile p2) (Finished s2' r2) ->
+    
+    have_same_structure p1 p2 u s1a s2a ->
+    
+    token_refines_finished_prefix_eq ->
+    
+    one_prefix_of_other o1 o2 ->
+    not_init p1 ->
+    not_init p2 ->
+    
+    o1 = o2 /\ oa1 = oa2.
+\end{minted}
+
+\begin{minted}{coq}
+Lemma oracle_refines_independent_from_reboot_function:
+forall ...,
+    exec u o s (compile p) (Finished s' r) ->
+    oracle_refines u s p grs o o_abs ->
+    forall grs', 
+      oracle_refines u s p grs' o o_abs.
+\end{minted}
+
+\begin{minted}{coq}
+Lemma oracle_refines_prefix_finished_not_crashed:
+forall ...,
+    oracle_refines u s1 p1 imp_reboot_f o1 oa1 ->
+    oracle_refines u s2 p2 imp_reboot_f o2 oa2 ->
+    
+    refines s1 s1a ->
+    refines s2 s2a ->
+    
+    exec u o1 s1 (compile p1) (Finished s1' r1) ->
+    exec u o2 s2 (compile p2) (Crashed s2') ->
+    
+    have_same_structure p1 p2 u s1a s2a ->
+    
+    one_prefix_of_other o1 o2 ->
+    not_init p1 ->
+    not_init p2 ->
+    False.
+\end{minted}
+
+These are compositional in the sense that proving corresponding properties for 
+each operation implies it is true for all programs created from them. 
+
+\subsection{AOE}

@@ -1,0 +1,60 @@
+\chapter{DiskSec}
+
+\section{Overview}
+Describe what it is and how it achieves it
+
+\section{Disk Model}
+explain sealed blocks, handles and such.
+
+\section{Noninterferece}
+Give and explain noninterference definition used in DiskSec
+
+\section{Single Trace Properties}
+unseal public and unseal owner and how that connect to NI
+
+
+
+\section{Implementation}
+\label{s:impl}
+
+We implemented Disksec by extending the CHL framework from
+FSCQ~\cite{chen:fscq}.  The changes involved modifying the model of the
+disk to keep track of logical permissions, adding primitive operations
+to seal and unseal blocks, and changing the execution semantics to keep
+track of unseal permissions, as shown in \autoref{fig:exec}.  We also
+changed the meaning of Hoare-logic specifications to require either
+unseal-safety or the stronger \cc{unseal\_public} notion.  The source
+code of Disksec and SFSCQ is publicly available at
+\url{https://github.com/mit-pdos/fscq}.
+
+We developed SFSCQ by modifying the DFSCQ file system~\cite{chen:dfscq},
+making the changes described in \autoref{s:fs}.  In particular, as
+mentioned in \autoref{s:fs:impl}, we switched from DFSCQ's checksum-based
+write-ahead log to a two-barrier-based log in SFSCQ (which is also the
+default for Linux ext4).  SFSCQ retains all other optimizations from
+DFSCQ, including log-bypass writes, deferred commit, etc (with proofs).
+As with DFSCQ, we produce executable code by extracting the Coq
+implementation to Haskell and running it on top of FUSE\@.  To erase
+the block sealing and unsealing operations at runtime, Disksec uses
+the \cc{Extract Constant} command in Coq to represent Disksec's
+handles using the raw blocks themselves, and it implements \cc{Seal}
+and \cc{Unseal} as no-ops.
+
+We built two versions of Disksec and SFSCQ.  The first version is fully
+proven, but lacks support for changing permissions on an existing file
+(i.e., changing the permissions on a file would require copying the
+file's data into a new file with the new permissions), and lacks support
+for randomness oracles.
+The second version extends the first version with support for randomness
+oracles and dynamic permissions.
+These changes caused existing proofs to break, and a few of them have not
+been repaired.
+See the source code for details.
+
+The Disksec approach worked reasonably well for SFSCQ because the underlying
+FSCQ file system does not unseal user data unless the user explicitly
+reads it.  The one exception was in the checksum-based write-ahead
+log, as mentioned above.  Other file system features that look at file
+contents might also be a challenge for Disksec, such as proactive checksum
+verification of file contents, de-duplication, storing small file contents
+in the inode itself, etc.
