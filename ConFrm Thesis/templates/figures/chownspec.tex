@@ -1,0 +1,13 @@
+\begin{BVerbatim}[commandchars=\\\{\},codes={\catcode`\$=3\catcode`\^=7\catcode`\_=8},fontsize=\footnotesize]
+\PY{k+kn}{Definition} \PY{n}{chown\PYZus{}state\PYZus{}noninterference} \PY{n}{f} \PY{n}{new\PYZus{}owner} \PY{o}{:=}
+  \PY{k}{forall} \PY{n}{viewer} \PY{n}{caller} \PY{n}{st0} \PY{n}{rand} \PY{n}{res0} \PY{n}{tr0} \PY{n}{st1}\PY{o}{,}
+    \PY{n}{exec} \PY{o}{(}\PY{n}{chown} \PY{n}{f} \PY{n}{new\PYZus{}owner}\PY{o}{)} \PY{n}{caller} \PY{n}{st0} \PY{n}{rand} \PY{o}{=}
+                                \PY{n}{Some} \PY{o}{(}\PY{n}{res0}\PY{o}{,} \PY{n}{tr0}\PY{o}{)} \PY{o}{\PYZhy{}\PYZgt{}}
+    \PY{o}{(} \PY{n}{file\PYZus{}data} \PY{n}{st0} \PY{n}{f} \PY{o}{=} \PY{n}{file\PYZus{}data} \PY{n}{st1} \PY{n}{f} \PY{o}{\PYZbs{}/}
+      \PY{n}{viewer} \PY{o}{\PYZlt{}}\PY{o}{\PYZgt{}} \PY{n}{new\PYZus{}owner} \PY{o}{)} \PY{o}{\PYZhy{}\PYZgt{}}
+    \PY{n}{equivalent\PYZus{}for\PYZus{}principal} \PY{n}{viewer} \PY{n}{st0} \PY{n}{st1} \PY{o}{\PYZhy{}\PYZgt{}}
+      \PY{k}{exists} \PY{n}{res1} \PY{n}{tr1}\PY{o}{,}
+        \PY{n}{exec} \PY{o}{(}\PY{n}{chown} \PY{n}{f} \PY{n}{new\PYZus{}owner}\PY{o}{)} \PY{n}{caller} \PY{n}{st1} \PY{n}{rand} \PY{o}{=}
+                                \PY{n}{Some} \PY{o}{(}\PY{n}{res1}\PY{o}{,} \PY{n}{tr1}\PY{o}{)} \PY{o}{/\PYZbs{}}
+        \PY{n}{equiv\PYZus{}state\PYZus{}for\PYZus{}principal} \PY{n}{viewer} \PY{n}{res0} \PY{n}{res1}\PY{o}{.}
+\end{BVerbatim}

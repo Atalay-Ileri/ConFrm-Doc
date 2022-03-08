@@ -1,0 +1,51 @@
+\begin{BVerbatim}[commandchars=\\\{\},codes={\catcode`\$=3\catcode`\^=7\catcode`\_=8},fontsize=\footnotesize]
+\PY{k+kn}{Inductive} \PY{n}{nondet\PYZus{}decision} \PY{o}{:=}
+\PY{o}{|} \PY{n}{RandomHandle} \PY{o}{(}\PY{n}{h}\PY{o}{:}\PY{n}{handle}\PY{o}{)}
+\PY{c}{(*}\PY{c}{ Other types of non\PYZhy{}determinism omitted for space }\PY{c}{*)}
+\\[0.7\baselineskip]\PY{o}{|} \PY{n}{CrashHere}\PY{o}{.}
+\\[0.7\baselineskip]\PY{k+kn}{Definition} \PY{n}{oracle} \PY{o}{:=} \PY{k+kt}{list} \PY{n}{nondet\PYZus{}decision}\PY{o}{.}
+\PY{k+kn}{Definition} \PY{n}{exec} \PY{o}{`}\PY{o}{(}\PY{n}{code}\PY{o}{:}\PY{n}{proc} \PY{n}{T}\PY{o}{)} \PY{o}{(}\PY{n}{u}\PY{o}{:}\PY{n}{Principal}\PY{o}{)} \PY{o}{(}\PY{n}{st}\PY{o}{:}\PY{n}{State}\PY{o}{)}
+           \PY{o}{(}\PY{n}{rand}\PY{o}{:}\PY{n}{oracle}\PY{o}{)} \PY{o}{:} \PY{n}{option} \PY{o}{(}\PY{n}{result} \PY{n}{T} \PY{o}{*} \PY{n}{trace}\PY{o}{)} \PY{o}{:=}
+  \PY{k}{match} \PY{n}{code}\PY{o}{,} \PY{n}{rand} \PY{k}{with}
+  \PY{o}{|} \PY{n}{ChangePerm} \PY{o}{\PYZus{}} \PY{o}{\PYZus{}}\PY{o}{,} \PY{n}{CrashHere} \PY{o}{=\PYZgt{}} \PY{n}{None}
+  \PY{o}{|} \PY{o}{\PYZus{}}\PY{o}{,} \PY{n}{CrashHere} \PY{o}{=\PYZgt{}} \PY{n}{Some} \PY{o}{(}\PY{n}{Crashed} \PY{n}{st}\PY{o}{,} \PY{n+nb+bp}{[]}\PY{o}{)}
+  \PY{o}{|} \PY{n}{Read} \PY{n}{a}\PY{o}{,} \PY{n}{RandomHandle} \PY{n}{h} \PY{o}{=\PYZgt{}}
+    \PY{k}{if} \PY{n}{addr\PYZus{}out\PYZus{}of\PYZus{}bounds} \PY{n}{st} \PY{n}{a} \PY{k}{then}
+      \PY{n}{Some} \PY{o}{(}\PY{n}{Finished} \PY{n}{st} \PY{n}{hzero}\PY{o}{,} \PY{n+nb+bp}{[]}\PY{o}{)}
+    \PY{k}{else} \PY{k}{if} \PY{n}{handle\PYZus{}used} \PY{n}{st} \PY{n}{h} \PY{k}{then}
+      \PY{n}{None}
+    \PY{k}{else}
+      \PY{k}{let} \PY{n}{data} \PY{o}{:=} \PY{n}{disk\PYZus{}block\PYZus{}data} \PY{n}{st} \PY{n}{a} \PY{k}{in}
+      \PY{k}{let} \PY{n}{dom}  \PY{o}{:=} \PY{n}{disk\PYZus{}block\PYZus{}dom}  \PY{n}{st} \PY{n}{a} \PY{k}{in}
+      \PY{k}{let} \PY{n}{st\PYZsq{}} \PY{o}{:=} \PY{n}{install\PYZus{}handle} \PY{n}{st} \PY{n}{h} \PY{o}{(}\PY{n}{data}\PY{o}{,} \PY{n}{dom}\PY{o}{)} \PY{k}{in}
+      \PY{n}{Some} \PY{o}{(}\PY{n}{Finished} \PY{n}{st\PYZsq{}} \PY{n}{h}\PY{o}{,} \PY{n+nb+bp}{[]}\PY{o}{)}
+  \PY{o}{|} \PY{n}{Write} \PY{n}{a} \PY{n}{h}\PY{o}{,} \PY{o}{\PYZus{}} \PY{o}{=\PYZgt{}}
+    \PY{k}{if} \PY{n}{handle\PYZus{}used} \PY{n}{st} \PY{n}{h} \PY{k}{then}
+      \PY{k}{let} \PY{n}{data} \PY{o}{:=} \PY{n}{handle\PYZus{}data} \PY{n}{st} \PY{n}{h} \PY{k}{in}
+      \PY{k}{let} \PY{n}{dom}  \PY{o}{:=} \PY{n}{handle\PYZus{}dom}  \PY{n}{st} \PY{n}{h} \PY{k}{in}
+      \PY{k}{let} \PY{n}{st\PYZsq{}} \PY{o}{:=} \PY{n}{disk\PYZus{}block\PYZus{}write} \PY{n}{st} \PY{n}{a} \PY{o}{(}\PY{n}{data}\PY{o}{,} \PY{n}{dom}\PY{o}{)} \PY{k}{in}
+      \PY{n}{Some} \PY{o}{(}\PY{n}{Finished} \PY{n}{st\PYZsq{}} \PY{n}{tt}\PY{o}{,} \PY{n+nb+bp}{[]}\PY{o}{)}
+    \PY{k}{else}
+      \PY{n}{Some} \PY{o}{(}\PY{n}{Finished} \PY{n}{st} \PY{n}{tt}\PY{o}{,} \PY{n+nb+bp}{[]}\PY{o}{)}
+  \PY{c}{(*}\PY{c}{ Some transitions omitted for space reasons }\PY{c}{*)}
+  \PY{o}{|} \PY{n}{Seal} \PY{n}{data} \PY{n}{dom}\PY{o}{,} \PY{n}{RandomHandle} \PY{n}{h} \PY{o}{=\PYZgt{}}
+    \PY{k}{if} \PY{n}{handle\PYZus{}used} \PY{n}{st} \PY{n}{h} \PY{k}{then}
+      \PY{n}{None}
+    \PY{k}{else}
+      \PY{k}{let} \PY{n}{st\PYZsq{}} \PY{o}{:=} \PY{n}{install\PYZus{}handle} \PY{n}{st} \PY{n}{h} \PY{o}{(}\PY{n}{data}\PY{o}{,} \PY{n}{dom}\PY{o}{)} \PY{k}{in}
+      \PY{n}{Some} \PY{o}{(}\PY{n}{Finished} \PY{n}{st\PYZsq{}} \PY{n}{h}\PY{o}{,} \PY{n+nb+bp}{[]}\PY{o}{)}
+  \PY{o}{|} \PY{n}{Unseal} \PY{n}{h}\PY{o}{,} \PY{o}{\PYZus{}} \PY{o}{=\PYZgt{}}
+    \PY{k}{if} \PY{n}{handle\PYZus{}used} \PY{n}{st} \PY{n}{h} \PY{k}{then}
+      \PY{k}{let} \PY{n}{data} \PY{o}{:=} \PY{n}{handle\PYZus{}data} \PY{n}{st} \PY{n}{h} \PY{k}{in}
+      \PY{k}{let} \PY{n}{dom}  \PY{o}{:=} \PY{n}{handle\PYZus{}dom}  \PY{n}{st} \PY{n}{h} \PY{k}{in}
+      \PY{k}{let} \PY{n}{perm} \PY{o}{:=} \PY{n}{domain\PYZus{}perm} \PY{n}{st} \PY{n}{dom} \PY{k}{in}
+      \PY{n}{Some} \PY{o}{(}\PY{n}{Finished} \PY{n}{st} \PY{n}{data}\PY{o}{,} \PY{o}{[}\PY{n}{perm}\PY{o}{]}\PY{o}{)}
+    \PY{k}{else}
+      \PY{n}{Some} \PY{o}{(}\PY{n}{Finished} \PY{n}{st} \PY{n}{zero}\PY{o}{,} \PY{n+nb+bp}{[]}\PY{o}{)}
+  \PY{o}{|} \PY{n}{ChangePerm} \PY{n}{dom} \PY{n}{newperm}\PY{o}{,} \PY{o}{\PYZus{}} \PY{o}{=\PYZgt{}}
+    \PY{k}{let} \PY{n}{oldperm} \PY{o}{:=} \PY{n}{domain\PYZus{}perm} \PY{n}{st} \PY{n}{dom} \PY{k}{in}
+    \PY{k}{let} \PY{n}{st\PYZsq{}} \PY{o}{:=} \PY{n}{domain\PYZus{}set\PYZus{}perm} \PY{n}{st} \PY{n}{dom} \PY{n}{newperm} \PY{k}{in}
+    \PY{n}{Some} \PY{o}{(}\PY{n}{Finished} \PY{n}{st} \PY{n}{tt}\PY{o}{,} \PY{o}{[}\PY{n}{oldperm}\PY{o}{]}\PY{o}{)}
+  \PY{o}{|} \PY{o}{\PYZus{}}\PY{o}{,} \PY{o}{\PYZus{}} \PY{o}{=\PYZgt{}} \PY{n}{None}
+  \PY{k}{end}\PY{o}{.}
+\end{BVerbatim}

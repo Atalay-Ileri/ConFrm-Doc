@@ -1,0 +1,186 @@
+
+
+
+ConFS API has 5 operations: create a file, delete a file, read from a file, write a file, extend a file, and change owner of a file. These operations are atomic and confidential.
+
+ConFs consists of 5 basic layers: disk, crypto, cache, list, and authentication. Disk and crypto layers are used in implementing the log. Cache layer is used to implement log cache. List layer is used to provide transactional operations. Authentication layer is used to provide access control on file level.
+
+Disk and crypto disk are composed to CryptoDisk composite layer. Log is implemented on top of CryptoDisk layer. CryptoDisk is composed with Cache layer to create CachedDisk layer. Log cache is implemented on CachedDisk layer.
+
+Log cache's interface is abstracted into LoggedDisk layer. LoggedDisk layer includes one operation for each function in log cache's interfaces. Semantics of those are implemented to reflect effects of the underlying functions. This correspondence is proved with a simulation proof.
+
+LoggedDisk is composed with List layer to form TransactionCache layer. Transaction interface is implemented on top of TransactionCache layer. Transaction interface also gets abstracted into TransactionalDisk layer in a similar fashion to log cache.
+
+TransactionalDisk is composed with Authentication Layer to form AuthenticatedDisk layer. Block allocators, inodes, and files are implemented on top of AuthenticatedDisk layer. Finally, the file interface is abstracted into File layer, which is the ConFs API.
+
+{\color{red} IMAGE HERE FOR LAYERS AND ORGANIZATION}
+
+\section{Layer Operations}
+\subsection{Disk}
+Disk layer offers 3 operations: Read, Write and Sync. It is parameterized by a type of the address (A), a decidable equality over addresses (EqDec A), the type of data stored (V), and an address predicate to determine if an address is in domain (A -> Prop). 
+
+It models the disk itself with a total function (A -> (V, list V)). The first component represents the latest value on the disk, while the second component represents previous values on that address since the last sync operation. Old values are used to determine the state after a reboot.
+
+Read takes an address and returns the latest value on the disk for that address if it is in the domain. If the input address is not in the domain, then the execution gets "stuck". A stuck execution can be thought of as throwing an exception.
+
+Write takes an address and a data block and updates the disk for that address if the address is in the domain. If the input address is not in the domain, the execution gets "stuck".
+
+Write a v : d ==> d[a] := (v, (fst d[a] :: snd d[a]))
+
+Sync empties all the old values from the disk and leaves only the latest values, meaning that all the writes to the disk are made durable.
+
+{\color{red} REBOOT BEHAVIOR HERE}
+
+\subsection{Crypto}
+Crypto layer offers 4 operations: GetKey, Encrypt, Decrypyt, and Hash. Its state consists of a list of generated keys and a map for hashed data and their hash values. A map for plain data is also present, along with the key that is used for encryption, and the encrypted data itself.
+
+GetKey returns a new encryption key that has not been generated before.
+Layer keeps track of the generated keys to ensure when a new key is created, it is unique. We use nondeterminism tokens to supply a new key every time the GetKey operation is called. If the key supplied by the token key has been generated before, the execution gets "stuck". This ensures a successful implication implies each returned key is unique.
+
+Encrypt and Decrypt are symmetric key encryption and decryption operations.
+We model the encryption and decryption function axiomatically. They are defined as abstract functions, and an axiom stating that they are inverse of each other for a given key is assumed.
+
+Since these are abstract functions, Layer keeps track of provided and returned keys, plaintexts, and ciphertexts in its state to ensure consistency between calls. Layer stores all this information in a map with type (ciphertext -> option (key  * plaintext)). The operational semantics of Encrypt/Decrypt operations ensures that returned values are consistent with the encryption history of the system. Similar to GetKey, execution gets 'stuck' if there is an inconsistency. 
+
+The Hash operation also acts similarly to Encrypt/Decrypt.The Hash function is defined abstractly, and operational semantics enforce consistency and collision-freeness by keeping track of the hashed values and their hashes in a map.
+
+{\color{red} REBOOT BEHAVIOR HERE}
+
+\subsection{Cache}
+The Cache layer offers 3 operations: Read, Write and Flush. Just like the disk layer, it is parameterized by a type of the address (A), a decidable equality over addresses (EqDec A), and the type of the data stored (V). It models the cache as a partial function (A -> option V).
+
+Read takes an address and returns (Some V) if there is an entry for the input address, and returns None otherwise.
+
+Write takes an address and a block of data, then updates the cache with the corresponding mapping. If an entry exists that corresponds with the input address, it gets overwritten.
+
+Flush empties the cache, effectively removing all existing entries within it.
+
+ConFs uses its cache layer as an in-memory log cache. Therefore when the system reboots, the cache state becomes empty.
+
+\subsection{List}
+The List layer offers 3 operations: Get, Put, and Delete. It is parameterized by the type of the data stored (V). It is used to model the active transaction as a list of (address, block) pairs. Get returns the stored list. Put appends its input to the stored list. Delete replaces the stored list with an empty one. 
+
+Since ConFs uses this layer to model in-memory transactions, its state becomes an empty list after a reboot. This corresponds to the fact that a crash wipes the contents of the memory.
+
+
+\subsection{Authentication}
+The Authentication layer has no state and a single operation: auth. It is used to enforce access control in the system. Auth operation takes a user as an argument and compares its input with the current user that is executing the operation. If they are the same user, then it returns true. Otherwise, it returns false.
+
+Since this layer doesn't have any state, it reboots to the same state.
+
+\section{Design}
+ConFs consists of 3 components, where each component is abstracted with a layer before connecting to the component that depends on it. These three components are log, transaction, and file components. Log component consists of checksum-based log (Log.v) and in-memory log cache (LogCache.v) on top of it. Transaction component contains implementation of a transaction system (Transaction.v). File component includes block allocator (BlockAllocator.v), inode (Inode.v), and file (File.v) implementations.
+
+\subsection{Log Component and Logged Disk}
+\subsubsection{Log Component}
+Log component consists of checksum-based, encrypted, write-ahead log and a log cache on top of it to speed up reads that are on the log.
+
+\subsubsection*{Write-ahead Log}
+Write-ahead log has a structure of a header block followed by a fixed number of log blocks. Whenever a new write comes in, it gets encrypted with a fresh key, written to the end of the valid portion of the log, and the header is updated to reflect the new state of the log.
+
+Header consists of two parts: a current part and an old part. During normal operations, the current part is used. The old part is utilized during recovery top rollback of the log in case a partial write to the log happens.
+
+Each part contains the following: a hash of the log, number of valid blocks in the log, and a list of transaction records. A transaction record contains an encryption key, start index of the transaction on the log and number of address and data blocks in the transaction. This information is used during applying the transaction and recovery.
+
+\paragraph{Requirement for encryption.}
+One unusual feature of ConFs is that blocks in the log are encrypted. This design choice was made to prevent a specific attack (or accidental leakage). The goal of the attacker is guessing what was sitting on the log before it was applied. Simplified attacks can be described as follows:
+
+\begin{itemize}
+    \item Attacker writes his guess to his file
+    \item System crashed after writing the data block and new header to the disk but before a sync.
+    \item New header makes to the disk but new data block doesn't.
+    \item If the the what is already on the log before new data block is written is same with the new data block, then the hash of the new header will match with what is on the log.
+    \item Attacker can observe this outcome by looking into the file contents.
+\end{itemize}
+
+{\color{red} DEMONSTRATING IMAGE HERE}
+
+Encrypting each transaction with a new key makes finding such a collision exponentially unlikely. Even in the case of accidental collision, attacker cannot learn the contents of the block because even the cipher-texts are the same, because different keys are used for encryption, plain texts would be different with high probability.
+
+\subsubsection*{Log Cache}
+Since the blocks in the log are encrypted as well as exact location of newest block of an address is not known quickly, reading an address where its current value is in the log can incur a significant overhead. To mitigate this overhead, We implemented a log cache that stores (address, block) pairs of the log contents. Log cache has two operations: read and write. They both take input addresses relative to the start of the data region and convert them to the absolute disk addresses before executing required operations. This indirection allowed us to hide the log from upper components via abstraction.
+
+Whenever there is an incoming read, system first reads the cache and it only issues a read to disk if the address is not found in the cache. Similarly, when a write is issued, system also writes the block to the cache after it writes the block to the log. This way, contents of the cache stays consistent with the contents of the log. Cache is flushed whenever the current log is applied.
+
+Recovery restores the valid cache state by decrypting each valid transaction in the log and writing its contents to the cache.
+
+\subsubsection{Logged Disk Abstraction}
+Log component is abstracted into Logged Disk layer that has four operations: read, write, recover and init. all of the operations correspond to the operations provided by the log cache and they have the same semantics. Recover is used during the recovery to recover log to a valid state. Init is used to initialize the log during creation of the file system image.
+
+Abstraction transforms the underlying state to hide crypto components as well as asynchronous nature of the disk. Just like the asynchronous disk, it uses a total function over a type with a decidable equality (addr -> value) to represent latest values of the underlying disk. It shifts addresses so that first data block of the disk becomes first block of this abstract disk, therefore hiding existence of the log on the disk. It is also parameterized by the log length and the disk size to enforce such limits.
+
+This is also the first layer that takes advantage of tokens to define a non-trivial crash semantics. It uses two tokens, CrashBefore and CrashAfter, to distinguish between crashing at a state where latest values correspond to a successful write or not.
+
+Layer connects to the underlying implementation by a refinement relation $R$ with three parts: token refinement ($R_t$) and state refinement ($R_s$) and reboot state refinement ($R_{rs}$). Due to complicated crash semantics of the log, token refinement relation of this abstraction is by far the most complicated of all.
+
+\subsection{Transaction and Transactional Disk}
+Transaction component is built on top of the composition of List and LoggedDisk layers.
+It uses List state to store current transaction and uses LoggedDisk operations to interact with the disk.
+
+Transaction API has 4 functions: read, write, commit, and abort.
+
+Read first bound-check the given address. If it is out of bounds, it returns all 0 block. If it is in bounds, implementation first checks the transaction for the address and returns he block if it is found. Otherwise, it reads it from the disk and returns that.
+
+Write, again, checks if the address is in bounds. If it is not, it returns None; indicating that write failed. If it is in bounds, it checks if there is enough space in transaction. If there isn't, again. it returns None. If there is room, then it adds provided address and data pair to the transaction and returns (Some tt) signaling a successful write.
+
+Commit, first gets the transaction list. Then it de-duplicates it based on the address, i.e. it keeps the latest block for each address and discards the rest. It writes de-duplicated transaction to the disk and empties the transaction.
+
+Abort just empties the transaction.
+
+\subsubsection{Transactional Disk Abstraction}
+{\color{red} XXXXXXX}
+
+\subsection{Block Allocator}
+ConFs contains a generic block allocator implementation that is used for both inode blocks and data blocks for the files. It uses TransactionalDisk layer as its base language. Implementation is parameterized by the starting address and the number of blocks contained. It assumes a layout that is a single bitmap block followed by num-of-blocks allocatable blocks.
+
+It provides 4 functions: read, write, alloc, and free. All functions operate based on the index of the managed block, therefore making them independent from where these blocks stored on the disk.
+
+Read takes an index as an input. It first checks if the given index is allocated. If the index is allocated, then it returns the block corresponding to that index. Otherwise returns None to indicate an error.
+
+Write takes an index and a block as an input. It first checks if the given index is allocated. If the index is allocated, then it writes block to that location and returns Some tt to indicate success. Otherwise returns None to indicate an error.
+
+Free takes an index as an input. It first checks if the given index is allocated. If the index is allocated, then it modifies the bitmap to mark it free and returns Some tt to indicate success. Otherwise returns None to indicate an error.
+
+Alloc takes a block as an input. It first checks if there are any available blocks. If there are, then it writes the input block to the first available empty block, modifies the bitmap to indicate that new block is allocated then returns its index. Otherwise returns None to indicate an error. Alloc takes an input block to prevent leaking previous contents of the empty block.
+
+\subsection{Inodes}
+ConFs implements simple inode structure to keep track of the metadata of the files. It stores one inode per block for simplicity. Inodes contain the owner of the file and a list of block numbers, which are indexes to block allocator for data blocks. For simplicity, single block contains a single inode. 
+
+Inode implementation provides 7 functions: alloc, free, extend, change\_owner, get\_block\_number, get\_all\_block\_numbers, and get\_owner.
+
+Alloc takes a user as an input, then allocates an inode where owner is the provided user. It returns the allocated inode's number, i. e. the index of the allocated inode block. 
+
+Free takes an inode number and frees it by marking it free on the bitmap.
+
+Extend takes an inode number and a block number and appends the input block number to the list of the inode with the provided number.
+
+Change\_owner takes an inode number and a user and sets owner of the inode that corresponds to the input number with the input user.
+
+Get\_block\_number takes an inode number and an index to the block number list and returns the block number at input index.
+
+Get\_all\_block\_numbers  takes an inode number and returns the block number list of the inode with the given number.
+
+Get\_owner  takes an inode number and returns the owner of the inode with the given number.
+
+\subsection{Files asnd File Disk}
+\subsubsection{Files}
+File component implements file system API. It implements access control and transactionality. Access control and transactionality is handled by a higher order function auth\_then\_exec. It authenticates the user then calls the requested function if user is permitted to do so. If called function successfully completes, then auth\_then\_exec commits the transaction and returns success. Otherwise, it aborts the transaction and returns failure.
+
+Files are represented by their inode numbers. ConFs does not provide filename functionality or directory structures.
+
+File components provides following functions: read, write, extend, create, delete, change\_owner.
+
+Read takes an inode number and a block offset and returns the file contents of the block at the given offset.
+
+Write takes an inode number, a block offset, and a block and overwrites the file contents of the block at the given offset with the input block.
+
+Extend takes an inode number and a block and appends the input block to the end of the file with given number. To do so, it allocates a new data block then adds newly allocated block's number to the inode.
+
+Create takes a user and creates an empty file where its owner is the given user. It returns the inode number of the file.
+
+Delete takes an inode number and removes the file with the given number. It frees all the blocks of the file, then frees the inode of the file.
+
+Change\_owner takes an inode number and a user and changes the owner of the file with the given number if the current owner of the file is the current user.
+
+\subsubsection{File Disk}
+{\color{red} XXXXXXXX}

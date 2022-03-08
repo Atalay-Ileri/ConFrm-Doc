@@ -1,0 +1,59 @@
+\begin{tikzpicture}[>=latex]
+
+  \tikzstyle{state}=[circle, draw, minimum size=.8cm, node distance=2.5cm];
+  \tikzstyle{ret}=[];
+  \tikzstyle{exec}=[rectangle, rounded corners=3mm, opacity=0.2, fill=black, minimum width=8cm, minimum height=1.5cm];
+
+  \tikzstyle{sim}=[<->, decorate, decoration={snake, pre length=2mm, post length=2mm, segment length=2mm}];
+  \tikzstyle{syscall}=[->];
+  \tikzstyle{sysret}=[->];
+  \tikzstyle{retsim}=[<->, densely dotted, thick];
+
+  \draw node (s0)  [state]              {$s_0$};
+  \draw node (s'0) [state, below of=s0] {$s'_0$};
+
+  \draw node (s1)  [state, right of=s0, xshift=1cm] {$s_1$};
+  \draw node (s'1) [state, below of=s1] {$s'_1$};
+
+  \draw node (s2)  [state, right of=s1, xshift=1cm] {$s_2$};
+  \draw node (s'2) [state, below of=s2] {$s'_2$};
+
+  \draw [sim] (s0) -- (s'0);
+  \draw [sim] (s1) -- (s'1);
+  \draw [sim] (s2) -- (s'2) {} node [pos=0.35, right] {$equivalent_{\mathrm{adv}}$};
+
+  \draw [syscall] (s0) -- (s1)   node (s01)  [near start, below] {} node [midway, below] {$p_\mathrm{user}$};
+  \draw [syscall] (s'0) -- (s'1) node (s'01) [near start, below] {} node [midway, below] {$p_\mathrm{user}$};
+
+  \draw [ret] node (s01r)  [above of=s01,  xshift=1cm, yshift=-.2cm] {$r_0$};
+  \draw [ret] node (s'01r) [above of=s'01, xshift=1cm, yshift=-.2cm] {$r'_0$};
+
+  \draw [sysret] (s01.north)  to [out=0, in=225] (s01r);
+  \draw [sysret] (s'01.north) to [out=0, in=225] (s'01r);
+
+  \draw [syscall] (s1)  -- (s2)  node (s12)  [near start, below] {} node [midway, below] {$p_\mathrm{adv}$};
+  \draw [syscall] (s'1) -- (s'2) node (s'12) [near start, below] {} node [midway, below] {$p_\mathrm{adv}$};
+ 
+  \draw [ret] node (s12r)  [above of=s12,  xshift=1cm, yshift=-.2cm] {$r_1$};
+  \draw [ret] node (s'12r) [above of=s'12, xshift=1cm, yshift=-.2cm] {$r'_1$};
+
+  \draw [sysret] (s12.north)  to [out=0, in=225] (s12r);
+  \draw [sysret] (s'12.north) to [out=0, in=225] (s'12r);
+  \draw [retsim] (s12r) to [kinky cross=(s1)--(s2), kinky crosses=left] (s'12r);
+
+  \draw node [exec, yshift=.25cm] at (s1.center) {};
+  \draw node [exec, yshift=.25cm] at (s'1.center) {};
+
+  %\draw [] node (sleg) [right of=s2] {$\cdot$};
+  %\draw [] node (sleg') [right of=sleg, xshift=3mm] {$\cdot$};
+  %\draw [syscall] (sleg) -- (sleg') {} node [midway, below] {$\mathrm{exec}$};
+
+  %\draw [] node (rleg) [right of=s2, yshift=8mm] {};
+  %\draw [] node (rleg') [below of=rleg, yshift=-3mm] {};
+  %\draw [retsim] (rleg) -- (rleg') {} node [midway, right] {$=$};
+
+  %\draw [] node (sleg2) [right of=s'2, yshift=8mm] {$\cdot$};
+  %\draw [] node (sleg2') [below of=sleg2, yshift=-3mm] {$\cdot$};
+  %\draw [sim] (sleg2) -- (sleg2') {} node [midway, right] {$equivalent_{\mathrm{adv}}$};
+
+\end{tikzpicture}

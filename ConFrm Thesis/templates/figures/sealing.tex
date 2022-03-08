@@ -1,0 +1,62 @@
+\begin{tikzpicture}[>=latex]
+
+  \tikzstyle{block}=[rectangle, draw, minimum height=0.5cm, minimum width=1.5cm, node distance=1cm];
+  \tikzstyle{pblock}=[rectangle split, rectangle split parts=2, draw, minimum height=1cm, minimum width=1.5cm, node distance=1cm, align=left];
+  \tikzstyle{sealed}=[fill=lightgray]
+
+  \draw node (b0) [block] {data};
+  \draw node (b1) [block, right of=b0, xshift=.5cm] {data};
+  \draw node (b2) [block, right of=b1, xshift=.5cm] {data};
+  \draw node [left of=b0, xshift=-2.5cm, anchor=west] {Real disk:};
+
+  \draw node (p0) [pblock, above of=b0] {block \nodepart{second} perm};
+  \draw node (p1) [pblock, right of=p0, xshift=.5cm] {block \nodepart{second} perm};
+  \draw node (p2) [pblock, right of=p1, xshift=.5cm] {block \nodepart{second} perm};
+  \draw node [left of=p0, xshift=-2.5cm, anchor=west] {Logical disk:};
+
+  \draw [->] (b0) -- (p0);
+  \draw [<-] (b2) -- (p2);
+
+  \draw node (fs)
+    [ rectangle, rounded corners=.2cm, draw,
+      minimum width=6cm, minimum height=2cm,
+      above of=p1, yshift=1.5cm ] {};
+  \draw node [left of=fs, xshift=-4cm, anchor=west] {File system:};
+
+  \draw node (fsp0) [pblock, sealed, above of=p0, yshift=1.5cm] {block \nodepart{second} perm};
+  \draw node (fsp2) [pblock, sealed, above of=p2, yshift=1.5cm] {block \nodepart{second} perm};
+
+  \draw [->] (p0.north) -- (fsp0.south) node [midway, left, align=right]
+    {\phantom{x} \\ \em Read \\ \em block};
+  \draw [->] (fsp2.south) -- (p2.north) node [midway, right, align=left]
+    {\phantom{x} \\ \em Write \\ \em block};
+
+  \draw node (w0) [block, above of=fsp0, yshift=2.25cm] {block};
+  \draw node (w2) [block, above of=fsp2, yshift=2.25cm] {block};
+
+  \draw [<-] (w0) -- (fsp0);
+  \draw [<-] (fsp2) -- (w2);
+
+  \draw node (fsread)
+    [ rectangle, rounded corners=.2cm, draw, fill=white,
+      minimum width=2.5cm, minimum height=1.5cm,
+      above of=fs, yshift=1cm, xshift=-1.75cm ]
+    {
+      \begin{minipage}{2.5cm}
+        \input{templates/figures/fig-wrapper-read}
+      \end{minipage}
+    };
+
+  \draw node (fswrite)
+    [ rectangle, rounded corners=.2cm, draw, fill=white,
+      minimum width=2.5cm, minimum height=1.5cm,
+      above of=fs, yshift=1cm, xshift=1.75cm ]
+    {
+      \begin{minipage}{2.5cm}
+        \input{templates/figures/fig-wrapper-write}
+      \end{minipage}
+    };
+
+  \draw node [left of=fsread, xshift=-2.25cm, anchor=west, align=left] {Syscall \\ wrappers:};
+
+\end{tikzpicture}

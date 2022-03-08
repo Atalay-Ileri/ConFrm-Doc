@@ -1,0 +1,7 @@
+\begin{BVerbatim}[commandchars=\\\{\},codes={\catcode`\$=3\catcode`\^=7\catcode`\_=8},fontsize=\footnotesize]
+\PY{k+kn}{Definition} \PY{n}{unseal\PYZus{}safe} \PY{o}{`}\PY{o}{(}\PY{n}{p} \PY{o}{:} \PY{n}{proc} \PY{n}{T}\PY{o}{)} \PY{o}{:=}
+  \PY{k}{forall} \PY{n}{u} \PY{n}{st} \PY{n}{rand} \PY{n}{res} \PY{n}{tr}\PY{o}{,}
+    \PY{n}{exec} \PY{n}{p} \PY{n}{u} \PY{n}{st} \PY{n}{rand} \PY{o}{=} \PY{n}{Some} \PY{o}{(}\PY{n}{res}\PY{o}{,} \PY{n}{tr}\PY{o}{)} \PY{o}{\PYZhy{}\PYZgt{}}
+      \PY{k}{forall} \PY{n}{perm}\PY{o}{,}
+        \PY{n}{In} \PY{n}{perm} \PY{n}{tr} \PY{o}{\PYZhy{}\PYZgt{}} \PY{n}{can\PYZus{}access} \PY{n}{u} \PY{n}{perm}\PY{o}{.}
+\end{BVerbatim}

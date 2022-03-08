@@ -1,0 +1,14 @@
+\begin{BVerbatim}[commandchars=\\\{\},codes={\catcode`\$=3\catcode`\^=7\catcode`\_=8},fontsize=\footnotesize]
+\PY{k+kn}{Definition} \PY{n}{equivalent\PYZus{}for\PYZus{}principal} \PY{n}{u} \PY{n}{st0} \PY{n}{st1} \PY{o}{:=}
+  \PY{c}{(*}\PY{c}{ all parts of st0 and st1 that are accessible to}
+\\[0.7\baselineskip]\PY{c}{     principal u are identical }\PY{c}{*)}\PY{o}{.}
+\PY{k+kn}{Definition} \PY{n}{ret\PYZus{}noninterference} \PY{o}{`}\PY{o}{(}\PY{n}{p} \PY{o}{:} \PY{n}{proc} \PY{n}{T}\PY{o}{)} \PY{o}{:=}
+  \PY{k}{forall} \PY{n}{u} \PY{n}{st0} \PY{n}{st0\PYZsq{}} \PY{n}{rand} \PY{n}{ret} \PY{n}{tr0} \PY{n}{st1}\PY{o}{,}
+    \PY{n}{exec} \PY{n}{p} \PY{n}{u} \PY{n}{st0} \PY{n}{rand} \PY{o}{=}
+        \PY{n}{Some} \PY{o}{(}\PY{n}{Finished} \PY{n}{st0\PYZsq{}} \PY{n}{ret}\PY{o}{,} \PY{n}{tr0}\PY{o}{)} \PY{o}{\PYZhy{}\PYZgt{}}
+    \PY{n}{equivalent\PYZus{}for\PYZus{}principal} \PY{n}{u} \PY{n}{st0} \PY{n}{st1} \PY{o}{\PYZhy{}\PYZgt{}}
+    \PY{k}{forall} \PY{n}{st1\PYZsq{}} \PY{n}{tr1}\PY{o}{,}
+      \PY{n}{exec} \PY{n}{p} \PY{n}{u} \PY{n}{st1} \PY{n}{rand} \PY{o}{=}
+          \PY{n}{Some} \PY{o}{(}\PY{n}{Finished} \PY{n}{st1\PYZsq{}} \PY{n}{ret\PYZsq{}}\PY{o}{,} \PY{n}{tr1}\PY{o}{)} \PY{o}{\PYZhy{}\PYZgt{}}
+      \PY{n}{ret\PYZsq{}} \PY{o}{=} \PY{n}{ret}\PY{o}{.}
+\end{BVerbatim}

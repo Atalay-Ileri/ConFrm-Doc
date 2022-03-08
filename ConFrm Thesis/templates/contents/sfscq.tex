@@ -22,11 +22,11 @@ noncrashing executions, this definition ensures that the data passed to
 {write} remains confidential regardless of whether the system crashes
 or not.
 
-%\begin{figure}[ht]
-%  \input{code/writespec}
-%  \caption{Confidentiality specification for the {write} system call.}
-%  \label{fig:writespec}
-%\end{figure}
+\begin{figure}[ht]
+  \input{templates/figures/writespec}
+  \caption{Confidentiality specification for the \cc{write} system call.}
+  \label{fig:writespec}
+\end{figure}
 
 The other part of the security specification lies in the {chown}
 system call, which changes the permissions on existing files, and thus

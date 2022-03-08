@@ -1,0 +1,12 @@
+\begin{BVerbatim}[commandchars=\\\{\},codes={\catcode`\$=3\catcode`\^=7\catcode`\_=8},fontsize=\footnotesize]
+\PY{k+kn}{Theorem} \PY{n}{write\PYZus{}confidentiality} \PY{o}{:}
+  \PY{k}{forall} \PY{n}{f} \PY{n}{off} \PY{n}{data0} \PY{n}{data1} \PY{n}{caller} \PY{n}{st} \PY{n}{rand} \PY{n}{res0} \PY{n}{tr0}\PY{o}{,}
+    \PY{n}{exec} \PY{o}{(}\PY{n}{write} \PY{n}{f} \PY{n}{off} \PY{n}{data0}\PY{o}{)} \PY{n}{caller} \PY{n}{st} \PY{n}{rand} \PY{o}{=}
+                               \PY{n}{Some} \PY{o}{(}\PY{n}{res0}\PY{o}{,} \PY{n}{tr0}\PY{o}{)} \PY{o}{\PYZhy{}\PYZgt{}}
+      \PY{k}{exists} \PY{n}{res1} \PY{n}{tr1}\PY{o}{,}
+        \PY{n}{exec} \PY{o}{(}\PY{n}{write} \PY{n}{f} \PY{n}{off} \PY{n}{data1}\PY{o}{)} \PY{n}{caller} \PY{n}{st} \PY{n}{rand} \PY{o}{=}
+                               \PY{n}{Some} \PY{o}{(}\PY{n}{res1}\PY{o}{,} \PY{n}{tr1}\PY{o}{)} \PY{o}{/\PYZbs{}}
+        \PY{k}{forall} \PY{n}{adv}\PY{o}{,}
+          \PY{o}{\PYZti{}} \PY{n}{can\PYZus{}access} \PY{n}{adv} \PY{o}{(}\PY{n}{file\PYZus{}perm} \PY{n}{st} \PY{n}{f}\PY{o}{)} \PY{o}{\PYZhy{}\PYZgt{}}
+          \PY{n}{equiv\PYZus{}state\PYZus{}for\PYZus{}principal} \PY{n}{adv} \PY{n}{res0} \PY{n}{res1}\PY{o}{.}
+\end{BVerbatim}
