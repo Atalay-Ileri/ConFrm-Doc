@@ -1,18 +1,142 @@
 \chapter{ConFrm}
 
-% structure adopted from disksec paper
-\section{Goal}
-
-
-
-\subsection{Challenges}
-% Can take from proposal
-
-\section{Specification: RDNI}
+\section{Specification: Relatively Deterministic Noninterference}
 % Definition and explanation of RDNI
+ConFrm modifies data noninterference to address the non-uniform outcome probabilities challenge. ConFrm provides a modified execution relation that takes a source of nondeterminism, which we call an oracle, and refers to it whenever it needs to make a nondeterministic choice, e.g. crashing or successfully executing. Since all possible nondeterminism in the system is captured by the oracle, it is possible to reason about specific series of nondeterministic events.
+
+%% This is too sudden. Need to work up to the definition. This is not understandable.
+%% Add diagrams to explain it better?
+Our modified noninterference definition requires the property to hold for all possible oracles that leads to executions. Therefore the new definition states that a system should be noninterfering for all possible series of events. This establishes a one-to-one pairing for each possible outcome, leading to preservation of the output distribution no matter how arbitrary it is.
+
+We call this approach oraclization of nondeterminism, and the new definition relatively deterministic noninterference (RDNI).
+
+\begin{figure}[ht]
+    \centering
+    \begin{verbatim}
+    Definition relatively_deterministic_noninterference_no_recovery
+        {T} (u: user) (p1 p2: prog T)
+       (R: state -> state -> Prop)
+       (cond: user -> Prop) :=
+      forall (o: oracle) (s1 s2: state) (res1 res2: Result T),
+        exec u o s1 p1 res1 ->
+        exec u o s2 p2 res2 ->
+        R s1 s2 ->
+        R (extract_state res1) (extract_state res2) /\
+        (cond u -> extract_ret res1 = extract_ret res2).
+    \end{verbatim}
+    \caption{Relatively deterministic noninterference without recovery.}
+    \label{fig:RDNI_no_recovery}
+\end{figure}
+
+\subsection{Crash, Reboot, and Recovery}
+Since we will be reasoning with crash-safe systems, ConFrm contains semantics for the process for crashes, reboot and a recovery. Crash semantics of the system are defined by the developer as they are defining their system model. Execution semantics of ConFrm support two types of execution results: Finished, and Crashed. It is developer's responsibility to ensure that their execution semantics are correct.
+
+Reboot process is also a source of nondeterminism when dealing with any storage device that can be in one of the multiple possible states after a crash followed by a reboot (e.g. asynchronous disks). To capture and quantify this source of nondeterminism, we introduced reboot state functions, or reboot functions for short. A reboot function takes a state after a crash and returns the state that the system will be after a reboot. Just like the crash semantics, it is the developer's responsibility to ensure that their reboot function accurately models the behavior of their system.
+
+We chose to separate the definition of the reboot functions from the definition of the system. Reason for our choice was to not constrain the developer in possible function definitions. This was crucial to define a class of functions for asynchronous disk.
+
+Recovery semantics for systems are provided by ConFrm. Provided semantics assume that recovery eventually will succeed after some number of crashes. Recovery semantics uses developer defined execution semantics for the execution of both original and recovery programs. 
+{\color{red} Explain recovery semantics here.}
+
+\begin{figure}[ht]
+    \centering
+    \begin{verbatim}
+    Inductive recovery_exec :
+    forall T, user -> list oracle -> state -> 
+    list (state -> state) -> prog T -> prog unit -> 
+    @Recovery_Result state T -> Prop :=
+  | ExecFinished :
+      forall T (p: prog' T) p_rec
+        u o d d' t,
+        exec u o d p (Finished d' t) ->
+        recovery_exec u [o] d [] p p_rec (RFinished d' t)
+  | ExecRecovered :
+      forall T (p: prog' T) p_rec
+        u o lo d d' get_reboot_state l_grs ret,
+        exec u o d p (Crashed d') ->
+        recovery_exec u lo (get_reboot_state d') l_grs p_rec p_rec ret ->
+        recovery_exec u (o::lo) d (get_reboot_state::l_grs) p p_rec (Recovered (extract_state_r ret)).
+
+    \end{verbatim}
+    \caption{Recovery Semantics}
+    \label{fig:Recovery_semantics}
+\end{figure}
 
 \section{Proof Approach}
+Our proof approach consists of two parts. First part is the support for abstraction. Second part is the meta-theory that provides relevant theorems to prove confidentiality of implementation from the confidentiality of abstraction.
 
+\subsection{Cores, Languages, and Refinements}
+\paragraph{Cores.}
+ConFrm introduces cores as the main way to model the system and the languages. A core has four components. First one is the state that will be used in operational semantics. Second one is list of possible operations (opcodes). Third one is list of possible nondeterminism tokens. Nondeterminism tokens are how we implement the concept of oracles from RDNI. Fourth one is the execution semantics of each operation.
+
+Also, to ensure that tokens capture all the nondeterminism in the semantics, a proof that shows, given a token, execution semantics are deterministic is required.
+
+
+\begin{figure}[ht]
+    \centering
+    \begin{verbatim}
+Record Core :=
+  {
+    token : Type;
+    state : Type;
+    operation : Type -> Type;
+    exec: forall T, user -> token -> state ->
+        operation T -> @Result state T -> Prop;
+    
+    exec_deterministic_wrt_token :
+      forall u o s T (p: operation T) ret1 ret2,
+        exec u o s p ret1 ->
+        exec u o s p ret2 ->
+        ret1 = ret2;
+  }.
+    \end{verbatim}
+    \caption{Definition of a core}
+    \label{fig:Core_Definition}
+\end{figure}
+
+\paragraph{Languages.}
+ConFrm also includes the machinery that turns a core to a full language by equipping it with a computation monad. This prevents the repetitive work that needs to be done to define languages. It also allows framework to provide core-agnostic theorems and tactics to be used in proofs.
+
+Semantics of the language are derived from the semantics of its core. New  semantics takes a list of tokens (i.e. an oracle) and consumes exactly one at each step. Turning a core into a language also gives it its recovery semantics.
+
+ConFrm also provides some theorems regarding determinism of an execution as well as relationship between oracles and executions like how two executions relate to each other if one's oracle is a prefix of the other's.
+
+\paragraph{Refinements.}
+ConFrm defines two types of refinements: refinement of a core and a refinement of a language. 
+
+\begin{figure}[ht]
+    \centering
+    \begin{verbatim}
+Record CoreRefinement {O_imp} (L_imp: Language O_imp) (O_abs: Core) :=
+  {
+    compile_core : forall T, O_abs.(Core.operation) T -> L_imp.(prog) T;
+    
+    refines_core: L_imp.(state) -> O_abs.(Core.state) -> Prop;
+    
+    refines_reboot_core: L_imp.(state) -> O_abs.(Core.state) -> Prop;
+    
+    token_refines: forall T, user -> L_imp.(state) -> 
+        O_abs.(Core.operation) T -> (L_imp.(state) -> 
+        L_imp.(state)) -> L_imp.(oracle) -> 
+        O_abs.(Core.token) -> Prop;
+    
+    exec_compiled_preserves_refinement_finished_core :
+      forall T (p2: O_abs.(Core.operation) T) o1 s1 s1' r u,
+        (exists s2, refines_core s1 s2) ->
+        L_imp.(exec) u o1 s1 (compile_core T p2) (Finished s1' r) ->
+        (exists s2', refines_core s1' s2');
+  }.
+    \end{verbatim}
+    \caption{Definition of a core refinement}
+    \label{fig:Core_Definition}
+\end{figure}
+
+.......
+
+\paragraph{Horizontal Compositions.}
+To enable modular implementations, ConFrm provides automatic derivation of a new, composite core from two given cores via horizontal composition. State of the composite core is a pair that contains the state of each the component cores. This capability allows developers to develop the system in small, self contained parts that can be combined at will when desired without much overhead. A language derived from a composite ConFrm contains support for "lifting" the programs written in a language of the one of the component cores to the language of the composite core. Similarly, it allows automatic derivation of a refinement between the two composite languages if a component of first language is a refinement of a component of the second language.
+
+\iffalse 
 \subsection{Oraclizition of Nondeterminism}
 - Explain tokens, oracles and relatively deterministic execution.
 
@@ -139,3 +263,4 @@ These are compositional in the sense that proving corresponding properties for
 each operation implies it is true for all programs created from them. 
 
 \subsection{AOE}
+\fi

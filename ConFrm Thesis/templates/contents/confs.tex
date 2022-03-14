@@ -4,6 +4,116 @@
 ConFs is a crash-safe file system implemented in Coq and its confidentiality is proven using ConFrm. It has a checksum based and encrypted log, a log cache for faster log reads, a transaction system for atomic operations, two block allocators for managing data and inode blocks, and an authentication system for access control. All these components are implemented on top of each other and intermediate abstraction layers are used to provide a cleaner interface for the components above.
 
 \section{Implementation}
+ConFs is implemented as vertical levels with their own DSL and file system state. This approach allowed us to simplify the operational semantics as we implemented higher level functionality. Each DSL is designed to model how underlying implementation and hardware behaves. These DSL's defined in ConFrm's layer structure to allow us to use the machinery and the meta-theory provided by ConFrm. This allowed us to encapsulate different parts of the system to only the relevant state and operations, reducing the proof effort significantly.
+
+{\color{red} Figure showing layers and parts here}.
+
+In the case of a DSL abstracting an implementation from the level below, a simulation proof is employed to ensure that DSL's semantics captures the behavior of the implementation. We will explain each layer, starting from the bottom, in the following part.
+
+\subsection{ATCD Level}
+ATCD level is the lowest level of ConFs and it contains the model of the raw disk, a crypto engine, and in-memory data structure operations. Its language and state consists of five parts, implemented as ConFrm cores. These parts are disk part, crypto part, cache part, transaction list part, and the authentication part. 
+
+Implementations in this level only uses disk, crypto and cache parts; leaving transaction list and authentication parts unused. Including these parts was necessary because each file system operation will compile into a program in ATCD level and those programs will use those parts. 
+
+Thanks to the ConFrm's horizontal composition mechanism, implementations and proofs in this level uses only the relevant parts of the language. This reduced unnecessary proof effort and implementation complexity significantly while retaining the ability to use implementations and theorems about them in the context of full level language.
+
+We implemented write-ahead log and log cache in this level. This level handled complicated crash and recovery semantics and presented a simple, crash-safe disk, via its representation invariant, for above levels to use. We will talk about these implementations in the following sections.
+
+{\color{red} Table showing the state and operations of the level here}.
+
+\subsection{ATC Level}
+The level above ATCD is called ATC level and it contains the model of a crash-safe disk and the possible operations on it, as well as the previously unused parts from ATCD level. ATC replaces disk, crypto, and cache cores with a new core named logged disk. ATC also uses transaction list part, leaving authentication part unused.
+
+Logged disk core contains an operation for each function log cache API provides. Similarly, the state of the logged disk is the crash resistant disk exposed by log cache implementation. This simplified crash semantics of the layer significantly by moving determination of possible crash states to the non-determinism tokens. This also turned its reboot and recovery semantics to a 'noop', that virtually removed the need for reasoning about the recovery process. 
+
+\begin{figure}[ht]
+    \centering
+\begin{verbatim}
+| ExecRecover : 
+      forall d u,
+        exec' u Cont d Recover (Finished d tt)
+        
+| ExecCrashBefore :
+  forall d T p u,
+    exec' u CrashBefore d p (Crashed d)
+
+| ExecCrashWriteAfter :
+  forall d la lv u,
+    NoDup la ->
+    length la = length lv ->
+    Forall (fun a => a < disk_size) la ->
+    length (addr_list_to_blocks la) + length lv <= log_size ->
+    exec' u CrashAfter d (Write la lv) (Crashed (upd_batch d la lv)).
+\end{verbatim}
+    \caption{Semantics of some of the transactional disk operations.}
+    \label{fig:LD_Crash_Semantics}
+\end{figure}
+
+We implemented transactions in this level. Implementation stores active transaction in the memory as (address, block) pairs. When transaction is committed, it deduplicates the contents based on the address - i.e. removes previous entries if an address is written multiple times in the transaction - before writing it to the log.
+
+Implementation also enforces transaction size during a write attempt. Putting a transaction size limit allowed us to ensure that, when a transaction is committed, it will fit into the log. This design choice is made to move part of the complexity to the write function from the already semantically complicated commit function.
+
+{\color{red} Table showing the state and operations of the level here}.
+
+\subsection{AD Level}
+Similar to the ATC level, AD level also abstracts a part of the ATC layer. On AD level, logged disk and transaction list core is replaced with transactional disk core. ATC level's disk and transaction list is abstracted to a pair of disks and an indicator that stores if the transaction is empty or not. One of the disks represents the disk with active transaction applied on it. Other disk represents the disk state without the active transaction. In conjunction with transactional disk part, AD level uses authentication part to enforce access control.
+
+Transaction being full is handled by a nondeterminism token. This abstraction allows us to remove reasoning about the precise transaction size, and turns it into a possibility that can happen in any write.
+
+\begin{figure}[ht]
+    \centering
+\begin{verbatim}
+| ExecWrite :
+  forall s a v u ,
+    exec' u Cont s (Write a v) 
+        (Finished (NotEmpty, ((upd (fst (snd s)) a v), snd (snd s))) (Some tt))
+
+| ExecWriteFull :
+  forall s a v u,
+    exec' u TxnFull s (Write a v) 
+        (Finished s None)
+\end{verbatim}
+    \caption{Semantics of some of the transactional disk operations.}
+    \label{fig:TD_Semantics}
+\end{figure}
+
+Similar to the logged disk, if a crash happened before or after a commit is determined by a nondeterminism token. One thing to note is that rolling back to the disk without active transaction is done by the reboot function of the level.
+
+\begin{figure}[ht]
+    \centering
+\begin{verbatim}
+| ExecCrashBefore :
+  forall d T p u,
+    exec' u CrashBefore d p 
+        (Crashed d)
+
+| ExecCommitCrashAfter :
+  forall s u,
+    exec' u CrashAfter s Commit 
+        (Crashed (Empty, (fst (snd s), fst (snd s)))).
+\end{verbatim}
+    \caption{Transactional disk crash semantics.}
+    \label{fig:TD_Crash_Semantics}
+\end{figure}
+
+Rest of the ConFs's components - i.e. block allocators, inodes and files - are implemented in this level. This level exposes the file system API.
+
+A generic block allocator implementation is used for both inode blocks and data blocks for the files. Block allocator assumes a layout that is a single bitmap block followed by some allocatable blocks.
+
+We implemented inodes to contain the owner of the file and a list of block numbers, which are indexes to block allocator for data blocks. There is no support for indirect blocks. ConFs stores one inode per block for simplicity.
+
+File component uses inode functions as well as disk block allocator to implement a block based file interface. Files are represented with their inode numbers. Inode numbers are assigned by the system during file creation and returned to the user.
+
+File component handles authentication as well as the actual manipulation of the files. Its functions are implemented as a higher-order function that handles authentication and committing or aborting, and inner functions that implements file operations.
+
+{\color{red} Table showing the state and operations of the level here}.
+
+\subsection{ConFs level}
+ConFs level is the topmost level that provides a language which every file system function is an operation and a state that is a mapping from inode numbers to file owner and contents. This level effectively hides all the complexities of the implementation and allows users to perceive and reason about the system similar to their intuitive understanding of it.
+
+Inode number that is being returned upon file creation, availability of free inodes, transaction fullness, and crashes are all dictated with nondeterminism tokens.
+
+{\color{red} Table showing the state and operations of the level here}.
 
 % Adopted from disksec
 \section{Specifiying security}
@@ -131,3 +241,4 @@ During this reasoning, we had to employ the condition that, in the log, current 
 
 
 {\color{red} Termination Sensitivity may go here. Maybe an explanation of why it was as hard as it is?}
+
