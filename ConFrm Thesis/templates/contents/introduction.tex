@@ -31,7 +31,7 @@ environment outside of the file system. Thus, we assume that our model
 of how the file-system implementation executes is correct.  That is, we are not
 concerned with bugs in unverified software or hardware outside of the file
 system, or users mounting malicious disk images.  We do prove that
-\cc{mkfs} produces a correct image, but ensuring confidentiality on top of an
+\texttt{mkfs} produces a correct image, but ensuring confidentiality on top of an
 intentionally corrupted file system image is difficult, even without formal
 verification. 
 
@@ -144,17 +144,30 @@ arises because standard nondeterministic noninterference
 captures what \emph{might} be possible, but an adversary may have
 more precise information about the actual \emph{probabilities} of
 different outcomes. A simple example of this weakness can be seen below: 
-%
+
+\begin{figure}[ht]
+    \centering
 \begin{verbatim}
 if (random_bit() = 1)
   return secret_bit
 else
   return random_bit()
 \end{verbatim}
-%
+    \caption{Example of a noninterfering program that leaks information via return value frequencies}
+    \label{fig:Frequency_Leaking_Program}
+\end{figure}
+
 This code leaks the secret bit 50\% of the time and outputs a random bit 50\% of the time. It is also important to note that it can output 0 or 1 independently of the secret value. This way, any (state, return) pair represents a successful execution. 
 
 Let’s say that two states are equivalent if they are the same for their non secret parts. This makes all states equivalent to each other in our example. Since any pair of state and return value is a valid execution, it is possible to find another execution from a related state with same return value. Therefore, This implementation satisfies the nondeterministic noninterference definition. 
+
+\begin{figure}[ht]
+    \centering
+    \includegraphics[scale=0.5]{templates/figures/matching-paths.png}
+    \caption{Every execution matches with the execution of the same color.\\
+    Numbers in brackets denote generated random bits. \\The number following the brackets denotes the return value.}
+    \label{fig:NI_Matching_Paths}
+\end{figure}
 
 Although the above program satisfies the definition, the secret bit can be determined via the observed frequency of repeated calls. When we look at the frequencies of output values, we can see that they correlate with the value of the secret bit. \\
 

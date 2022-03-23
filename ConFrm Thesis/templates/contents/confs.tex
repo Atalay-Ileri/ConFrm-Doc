@@ -1,28 +1,30 @@
 \chapter{ConFs File System}
 
 \section{Overview}
-ConFs is a crash-safe file system implemented in Coq and its confidentiality is proven using ConFrm. It has a checksum based and encrypted log, a log cache for faster log reads, a transaction system for atomic operations, two block allocators for managing data and inode blocks, and an authentication system for access control. All these components are implemented on top of each other and intermediate abstraction layers are used to provide a cleaner interface for the components above.
+To test the capabilities of ConFrm, we implemented ConFs, a confidential, crash-safe file system with a checksum based and encrypted log. 
+ConFs is a crash-safe file system implemented in Coq and its confidentiality is proven using ConFrm framework. It has a checksum based and encrypted log, a log cache for faster log reads, a transaction system for atomic operations, two block allocators for managing data and inode blocks, and an authentication system for access control. All these components are implemented on top of each other and intermediate abstraction layers are used to provide a cleaner interface for the components above.
 
 \section{Implementation}
-ConFs is implemented as vertical levels with their own DSL and file system state. This approach allowed us to simplify the operational semantics as we implemented higher level functionality. Each DSL is designed to model how underlying implementation and hardware behaves. These DSL's defined in ConFrm's layer structure to allow us to use the machinery and the meta-theory provided by ConFrm. This allowed us to encapsulate different parts of the system to only the relevant state and operations, reducing the proof effort significantly.
+We implemented ConFs as a stack of levels, each level consisting of a ConFrm language and the programs written in that language. This approach allows us to simplify the operational semantics as we implement higher level functionality. Each language is designed to model how underlying implementation and hardware behaves. Using ConFrm's language structure allow us to use the machinery and the meta-theory provided. This allowed us to encapsulate different parts of the system to only the relevant state and operations, reducing the proof effort significantly.
 
 {\color{red} Figure showing layers and parts here}.
 
-In the case of a DSL abstracting an implementation from the level below, a simulation proof is employed to ensure that DSL's semantics captures the behavior of the implementation. We will explain each layer, starting from the bottom, in the following part.
+In the case of a language abstracting an implementation from the level below, a simulation proof is employed to ensure that language's semantics captures the behavior of the implementation. We will explain each level, starting from the bottom, in the following part.
 
 \subsection{ATCD Level}
-ATCD level is the lowest level of ConFs and it contains the model of the raw disk, a crypto engine, and in-memory data structure operations. Its language and state consists of five parts, implemented as ConFrm cores. These parts are disk part, crypto part, cache part, transaction list part, and the authentication part. 
+ATCD level is the lowest level of ConFs and it contains the model of the raw disk, a crypto engine, and in-memory data structure operations. Its language and state consists of five parts, implemented as ConFrm cores. These parts are disk core, crypto core, cache core, transaction list core, and the authentication core. 
 
-Implementations in this level only uses disk, crypto and cache parts; leaving transaction list and authentication parts unused. Including these parts was necessary because each file system operation will compile into a program in ATCD level and those programs will use those parts. 
+Implementations in this level only uses operations from disk, crypto and cache cores; leaving transaction list and authentication cores unused. Including these cores was necessary because each file system operation will compile into a program in ATCD level and those programs will use operations from those cores. 
 
 Thanks to the ConFrm's horizontal composition mechanism, implementations and proofs in this level uses only the relevant parts of the language. This reduced unnecessary proof effort and implementation complexity significantly while retaining the ability to use implementations and theorems about them in the context of full level language.
 
 We implemented write-ahead log and log cache in this level. This level handled complicated crash and recovery semantics and presented a simple, crash-safe disk, via its representation invariant, for above levels to use. We will talk about these implementations in the following sections.
 
+
 {\color{red} Table showing the state and operations of the level here}.
 
 \subsection{ATC Level}
-The level above ATCD is called ATC level and it contains the model of a crash-safe disk and the possible operations on it, as well as the previously unused parts from ATCD level. ATC replaces disk, crypto, and cache cores with a new core named logged disk. ATC also uses transaction list part, leaving authentication part unused.
+The level above ATCD is called ATC level and it contains a new core named logged disk that models a crash-safe disk and the possible operations on it, as well as the previously unused cores from ATCD level. ATC replaces disk, crypto, and cache cores with logged disk core. ATC also uses transaction list core, leaving authentication core unused.
 
 Logged disk core contains an operation for each function log cache API provides. Similarly, the state of the logged disk is the crash resistant disk exposed by log cache implementation. This simplified crash semantics of the layer significantly by moving determination of possible crash states to the non-determinism tokens. This also turned its reboot and recovery semantics to a 'noop', that virtually removed the need for reasoning about the recovery process. 
 
@@ -49,14 +51,14 @@ Logged disk core contains an operation for each function log cache API provides.
     \label{fig:LD_Crash_Semantics}
 \end{figure}
 
-We implemented transactions in this level. Implementation stores active transaction in the memory as (address, block) pairs. When transaction is committed, it deduplicates the contents based on the address - i.e. removes previous entries if an address is written multiple times in the transaction - before writing it to the log.
+We implemented transactions in this level. Implementation stores active transaction in the memory as (address, block) pairs. When a transaction is committed, it deduplicates the contents based on the address - i.e. removes previous entries if an address is written multiple times in the transaction - before writing it to the log.
 
-Implementation also enforces transaction size during a write attempt. Putting a transaction size limit allowed us to ensure that, when a transaction is committed, it will fit into the log. This design choice is made to move part of the complexity to the write function from the already semantically complicated commit function.
+Implementation also enforces transaction size during a write attempt. Putting a transaction size limit allowed us to ensure that, when a transaction is committed, it will fit into the log. This design choice is made to move part of the complexity to the write function from the already complicated commit function.
 
 {\color{red} Table showing the state and operations of the level here}.
 
 \subsection{AD Level}
-Similar to the ATC level, AD level also abstracts a part of the ATC layer. On AD level, logged disk and transaction list core is replaced with transactional disk core. ATC level's disk and transaction list is abstracted to a pair of disks and an indicator that stores if the transaction is empty or not. One of the disks represents the disk with active transaction applied on it. Other disk represents the disk state without the active transaction. In conjunction with transactional disk part, AD level uses authentication part to enforce access control.
+Similar to the ATC level, AD level also abstracts a part of the ATC layer. On AD level, logged disk and transaction list core is replaced with transactional disk core. ATC level's state is abstracted to a pair of disks and an indicator that stores if the transaction is empty or not. One of the disks represents the disk with active transaction applied on it. Other disk represents the disk state without the active transaction. In conjunction with transactional disk core, AD level uses authentication core to enforce access control.
 
 Transaction being full is handled by a nondeterminism token. This abstraction allows us to remove reasoning about the precise transaction size, and turns it into a possibility that can happen in any write.
 
@@ -118,38 +120,12 @@ Inode number that is being returned upon file creation, availability of free ino
 % Adopted from disksec
 \section{Specifiying security}
 % Explains special RDNI definitions.
-Security of ConFs is defined as an RDNI specification for each of the compiled FileDisk operations. In the center of these specifications is equivalence relations between states. Since ConFs consists of four distinct levels, we had four different but related equivalence relations. We will explain these in the descending order.
+Security of ConFs is defined as an RDNI specification for each of the compiled FileDisk operations. In the center of these specifications is the equivalence relation between states. Since ConFs consists of four distinct levels, we had four different but related equivalence relations. We will explain these in the descending order.
 
 \subsection{FileDisk Level Security}
-We made some changes to the data noninterference and equivalence relation definitions to unify ret\_noninterference and state\_noninterference, and to make it general enough to ensure that it can accommodate special specifications for Write and ChangeOwner operations.
+We made some changes to the equivalence relation definition to unify ret\_noninterference and state\_noninterference, and to make it general enough to ensure that it can accommodate special specifications for Write and ChangeOwner operations.
 
-First change is that RNDI is defined over two programs to allow it to apply two writes with different input data. Second change is making return value equality conditional on the user. This change allow us to state "if the user is adversary, then return values should be the same." formally in the same definition.
-
-\begin{figure}[ht]
-    \centering
-\begin{verbatim}
-Definition RDNI (u: user) {T} (p1 p2: L_abs.(prog) T)
-(rec: L_abs.(prog) unit) (valid_state: L_abs.(state) -> Prop)
-(R: L_abs.(state) -> L_abs.(state) -> Prop) (cond: user -> Prop)
-l_get_reboot_state :=
-  forall lo s1 s1',
-    L_abs.(recovery_exec) u lo s1 l_get_reboot_state p1 rec s1' ->
-    valid_state s1 ->
-    forall s2,
-    valid_state s2 ->
-    R s1 s2 ->
-    exists s2',
-      L_abs.(recovery_exec) u lo s2 l_get_reboot_state p2 rec s2' /\
-      R (extract_state_r s1') (extract_state_r s2') /\
-      (cond u -> extract_ret_r s1' = extract_ret_r s2') /\
-      valid_state (extract_state_r s1') /\
-      valid_state (extract_state_r s2').
-\end{verbatim}
-    \caption{Relatively Deterministic Noninterference (RDNI)}
-    \label{fig:RDNI}
-\end{figure}
-
-We also modified our equivalence relation to take an optional inode number to exclude the contents of the file that its owner is being changed.
+We modified our equivalence relation to take an optional inode number to exclude the contents of the file that its owner is being changed.
 Since equivalence relation for ChangeOwner excludes contents of the file that is being operated on, it only provides half of the required security - i.e. it excludes leakage from the changed file to the outside. The fact that no information leaks from outside to the file is covered by its functional correctness which states that file's contents stay unchanged after the operation.
 
 \begin{figure}[ht]
@@ -174,7 +150,6 @@ Definition same_for_user_except (u: user)
     \caption{Equivalence relation for two FileDisk states.}
     \label{fig:eqivalence_for_filedisk}
 \end{figure}
-
 
 
 \subsection{AuthenticatedDisk and TransactionCache Level Security}

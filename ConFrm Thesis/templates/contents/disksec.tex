@@ -6,7 +6,7 @@
 
 {\color{red} For some reason I am not happy with this part. I may rewrite this. }\\
 %%%% Rewrite this to explain it is a form of relational noninterference.
-To capture the notion of confidentiality in a file system, \sys
+To capture the notion of confidentiality in a file system, DiskSec
 defines the notion of \emph{data noninterference}.  Loosely speaking,
 data noninterference states that two executions are indistinguishable
 with respect to specific confidential data (e.g., the contents of
@@ -22,28 +22,28 @@ security guarantees provided by Linux file systems.
 %\begin{figure}[ht]
 %  \centering
 %    \input{templates/figures/approach}
-%  \caption{Overview of \sys's approach to reasoning about confidentiality.}
+%  \caption{Overview of DiskSec's approach to reasoning about confidentiality.}
 %  \label{fig:approach}
 %\end{figure}
 
 \paragraph{Two-safety formulation.}
-\sys formulates data noninterference in terms of two-safety, as shown
-in \autoref{fig:approach}.  Specifically, data noninterference considers
+DiskSec formulates data noninterference in terms of two-safety, as shown
+in \ref{fig:approach}.  Specifically, data noninterference considers
 two executions that run the same code but start from different states.  In
-\autoref{fig:approach}, the executions are shown as horizontal transitions
+\ref{fig:approach}, the executions are shown as horizontal transitions
 between states, indicated by the gray outlines.  The executions
 consist of a step by the user (running procedure $p_\mathrm{user}$,
 corresponding to some system call) and then a step by the adversary
 (running $p_\mathrm{adv}$, corresponding to some other system call).
-Although \autoref{fig:approach} shows one particular pair of executions,
-\sys's theorems consider all possible such pairs of executions.
+Although \ref{fig:approach} shows one particular pair of executions,
+DiskSec's theorems consider all possible such pairs of executions.
 
 The starting states in these two executions ($s_0$ and $s'_0$)
 agree on all data visible to the adversary but could have
 different contents of confidential files.  We call these two states
 \emph{equivalent}$_\mathrm{adv}$, to indicate that they are equivalent
 with respect to the adversary.  This equivalence is indicated by the
-squiggly line in \autoref{fig:approach}.  The essence of data noninterference
+squiggly line in \ref{fig:approach}.  The essence of data noninterference
 is allowing the states to differ in the contents of confidential data
 while requiring all other metadata (such as file length, directory order,
 etc.) to remain the same.
@@ -55,7 +55,7 @@ The definition of data noninterference consists of two
 requirements.  The first is \emph{state noninterference},
 which requires that after every transition, the resulting states
 remain \emph{equivalent}$_\mathrm{adv}$.  This is indicated in
-\autoref{fig:approach} by the squiggly lines between $s_1$ and $s'_1$,
+\ref{fig:approach} by the squiggly lines between $s_1$ and $s'_1$,
 as well as between $s_2$ and $s'_2$.  This requirement ensures that
 confidential data from $s_0$ and $s'_0$ does not suddenly become
 accessible to the adversary in a subsequent state, and it addresses the
@@ -63,7 +63,7 @@ indirect-data-disclosure challenge.
 
 The second requirement is \emph{return-value noninterference},
 which requires that transitions by the adversary return exactly the
-same values in both executions.  For example, \autoref{fig:approach}
+same values in both executions.  For example, \ref{fig:approach}
 shows that the adversary's $p_\mathrm{adv}$ returns $r_1$ in the top
 execution and $r'_1$ in the bottom execution.  Return-value noninterference
 requires that $r_1=r'_1$, as indicated by the dotted
@@ -84,7 +84,7 @@ because they run in \emph{equivalent}$_\mathrm{adv}$ states.
 
 The discretionary nature of data noninterference shows up in the fact
 that legitimate users can obtain different results depending on the
-confidential data.  For example, in \autoref{fig:approach}, the results
+confidential data.  For example, in \ref{fig:approach}, the results
 of the user's execution of $p_\mathrm{user}$, $r_0$ and $r'_0$, might be
 different, because $p_\mathrm{user}$ could correspond to the user reading
 a confidential file.  At this point, a user has the discretion to disclose this information
@@ -95,21 +95,21 @@ discretionary access control in a POSIX file system.
 
 \paragraph{Defining return-value noninterference.}
 
-\autoref{fig:two-safety-ret} presents \sys's definition of return-value
+\ref{fig:two-safety-ret} presents DiskSec's definition of return-value
 noninterference, in a simplified notation.  This definition relies on
-the definition of \cc{exec}, which describes how procedures execute.
-\cc{exec} takes four arguments: the procedure that is executing (\cc{p}),
-the principal on whose behalf \cc{p} is running (\cc{u}), and the starting
-state (\cc{st0}).
-\cc{exec} returns two things: the outcome and an \emph{unseal trace},
+the definition of \texttt{exec}, which describes how procedures execute.
+\texttt{exec} takes four arguments: the procedure that is executing (\texttt{p}),
+the principal on whose behalf \texttt{p} is running (\texttt{u}), and the starting
+state (\texttt{st0}).
+\texttt{exec} returns two things: the outcome and an \emph{unseal trace},
 which we describe later.
-The outcome can be either \cc{Finished st' r}, indicating that the
-procedure ended in state \cc{st'} and returned \cc{r}, or
-\cc{Crashed st'}, indicating that the system crashed in state \cc{st'}.
+The outcome can be either \texttt{Finished st' r}, indicating that the
+procedure ended in state \texttt{st'} and returned \texttt{r}, or
+\texttt{Crashed st'}, indicating that the system crashed in state \texttt{st'}.
 The unseal traces are irrelevant for now and are used only as part of the
-proof technique described in \autoref{s:proof}.
+proof technique described in \ref{s:proof}.
 This definition also relies on a notion of two states being equivalent for
-a particular principal, \cc{equivalent\_for\_principal}, which captures
+a particular principal, \texttt{equivalent\_for\_principal}, which captures
 the intuitive notion \emph{equivalent}$_\mathrm{adv}$ from above.
 
 \begin{figure}[ht]
@@ -123,47 +123,47 @@ The definition of return-value noninterference captures the intuition
 about the adversary not being able to learn information about confidential
 data: the return value obtained by the adversary by running some
 code does not depend on the confidential data.  To make this precise,
-\cc{ret\_noninterference} of procedure \cc{p} considers pairs of states,
-\cc{st0} and \cc{st1}, which are equivalent as far as some principal
-\cc{u} is concerned.  Here, \cc{u} is representing the adversary, and
-confidential data is represented by the difference between \cc{st0} and
-\cc{st1} that the adversary should not be able to observe.  If \cc{u}
-runs procedure \cc{p} in state \cc{st0} and gets return value \cc{ret},
+\texttt{ret\_noninterference} of procedure \texttt{p} considers pairs of states,
+\texttt{st0} and \texttt{st1}, which are equivalent as far as some principal
+\texttt{u} is concerned.  Here, \texttt{u} is representing the adversary, and
+confidential data is represented by the difference between \texttt{st0} and
+\texttt{st1} that the adversary should not be able to observe.  If \texttt{u}
+runs procedure \texttt{p} in state \texttt{st0} and gets return value \texttt{ret},
 then it must also have been possible for the adversary to get the same
-return value, \cc{ret}, if he ran \cc{p} in state \cc{st1} instead.
+return value, \texttt{ret}, if he ran \texttt{p} in state \texttt{st1} instead.
 
 
 \paragraph{Defining state noninterference.}
 
-\autoref{fig:two-safety-state} presents \sys's definition
+\ref{fig:two-safety-state} presents DiskSec's definition
 of state noninterference, which complements return-value
-noninterference.  This definition helps \sys deal with the indirect-disclosure
-challenge from \autoref{s:goal:chal}.  This definition
-considers two principals: a \cc{viewer} and a \cc{caller}.  The definition
-intuitively says that, by running procedure \cc{p}, the caller will not
-create any state differences observable to \cc{viewer}.
+noninterference.  This definition helps DiskSec deal with the indirect-disclosure
+challenge from \ref{s:goal:chal}.  This definition
+considers two principals: a \texttt{viewer} and a \texttt{caller}.  The definition
+intuitively says that, by running procedure \texttt{p}, the caller will not
+create any state differences observable to \texttt{viewer}.
 
 \begin{figure}[ht]
   \input{templates/figures/two-safety-state}
-  \caption{Definition of state noninterference, capturing that \cc{caller}
-    does not indirectly disclose state to \cc{viewer}.}
+  \caption{Definition of state noninterference, capturing that \texttt{caller}
+    does not indirectly disclose state to \texttt{viewer}.}
   \label{fig:two-safety-state}
 \end{figure}
 
-More formally, \cc{state\_noninterference} considers two executions
-by \cc{caller}, running the same procedure \cc{p}, with the same exact
-arguments (encoded inside of \cc{p}).  If the caller runs \cc{p} in two
-states that appear equivalent to \cc{viewer}, then the resulting states
-in \cc{res0} and \cc{res1} will still appear equivalent to \cc{viewer}.
-This definition includes the possibility of a crash while running \cc{p}.
+More formally, \texttt{state\_noninterference} considers two executions
+by \texttt{caller}, running the same procedure \texttt{p}, with the same exact
+arguments (encoded inside of \texttt{p}).  If the caller runs \texttt{p} in two
+states that appear equivalent to \texttt{viewer}, then the resulting states
+in \texttt{res0} and \texttt{res1} will still appear equivalent to \texttt{viewer}.
+This definition includes the possibility of a crash while running \texttt{p}.
 
 \section{Proof approach: sealed blocks}
 \label{s:proof}
 
 Proving that every system call in a file system satisfies
-\cc{ret\_noninterference} and \cc{state\_noninterference} would require
+\texttt{ret\_noninterference} and \texttt{state\_noninterference} would require
 a proof that reasons about two executions, which is complex.  To reduce
-proof effort, \sys introduces an implementation and proof approach
+proof effort, DiskSec introduces an implementation and proof approach
 called \emph{sealed blocks}.  This approach factors out reasoning
 about confidentiality of files from most of the file-system logic,
 by reasoning about the confidentiality of disk blocks.  The intuition
@@ -175,32 +175,32 @@ directly into permissions on the underlying blocks comprising the file.
 \begin{figure}[ht]
   \centering
   \scalebox{0.8}{
-    \input{templates/figures/sealing}
+    %\input{templates/figures/sealing}
   }
-  \caption{Overview of \sys's proof approach using sealed blocks.}
+  \caption{Overview of DiskSec's proof approach using sealed blocks.}
   \label{fig:sealing}
 \end{figure}
 
-\autoref{fig:sealing} presents an overview of \sys's block-sealing
+\ref{fig:sealing} presents an overview of DiskSec's block-sealing
 approach.  There are three parts to the block-sealing approach.  The first
 is to create a logical disk where every disk block is associated with a
 \emph{permission}, which defines the set of principals that can access
 this block.  Some permissions are public, indicating that the block is
 accessible to anyone.  Other permissions might restrict access to some
 users, indicating that this block is storing confidential file data.
-\sys is agnostic to the specific choice of principals or permissions;
-that is, all of \sys is parameterized over arbitrary types for
+DiskSec is agnostic to the specific choice of principals or permissions;
+that is, all of DiskSec is parameterized over arbitrary types for
 principals and permissions.  The logical disk is purely a proof strategy
 and does not appear at runtime; the real disk, shown at the bottom of
-\autoref{fig:sealing}, has no permissions.
+\ref{fig:sealing}, has no permissions.
 
 The second part is a sealed-block abstraction, indicated by shaded
-blocks in \autoref{fig:sealing}.  A sealed block represents the raw
+blocks in \ref{fig:sealing}.  A sealed block represents the raw
 block contents and the associated permission, but the file system cannot
 directly access a sealed block's contents.  Instead, the file-system
-implementation must explicitly call \cc{seal()} and \cc{unseal()} to
-translate between sealed blocks and their raw contents.  These \cc{seal()}
-and \cc{unseal()} functions are also purely part of the proof and do
+implementation must explicitly call \texttt{seal()} and \texttt{unseal()} to
+translate between sealed blocks and their raw contents.  These \texttt{seal()}
+and \texttt{unseal()} functions are also purely part of the proof and do
 not appear at runtime.
 
 The code of the file system can read and write arbitrary blocks on
@@ -212,15 +212,15 @@ proving confidentiality, because the file-system implementation never
 has access to confidential data.
 
 The third part is the wrappers for system calls that handle confidential
-data, namely, \cc{read()} and \cc{write()}.  These wrappers are responsible
-for explicitly calling \cc{seal()} and \cc{unseal()} to translate between
+data, namely, \texttt{read()} and \texttt{write()}.  These wrappers are responsible
+for explicitly calling \texttt{seal()} and \texttt{unseal()} to translate between
 the raw data seen by the user (on top of the system call) and the sealed
 blocks that are handled in the rest of the file-system implementation.
 
-\sys's sealed-block approach is a good fit for the challenges outlined in
-\autoref{s:goal:chal}.  Specifically, there are very few places where a file
+DiskSec's sealed-block approach is a good fit for the challenges outlined in
+\ref{s:goal:chal}.  Specifically, there are very few places where a file
 system must access the actual contents of a file's disk block---namely, in the
-wrappers for the \cc{read()} and \cc{write()} syscalls.  As a result, most
+wrappers for the \texttt{read()} and \texttt{write()} syscalls.  As a result, most
 specifications in a file system remain largely the same.  The key difference is
 that the specifications promise that the procedure in question does not look
 inside of any confidential blocks.  This means that any nondeterminism present
@@ -228,7 +228,7 @@ in the specification cannot be used to leak confidential data.
 
 This approach allows file-system developers to avoid proving explicit
 confidentiality theorems for most of the file system, but it still allows
-\sys to conclude that confidentiality is not violated.  \sys provides a
+DiskSec to conclude that confidentiality is not violated.  DiskSec provides a
 theorem that proves two-safety for any file-system implementation that
 correctly uses the sealed-block abstraction.  As a result, the
 file-system developer need not reason about complex two-safety theorems
@@ -237,27 +237,27 @@ and can limit their reasoning to single executions.
 
 \subsection{Formalizing sealed blocks}
 
-To formally define \sys's sealed-block abstraction, \sys uses the
-notion of a \emph{handle} to represent a sealed block.  \sys requires
+To formally define DiskSec's sealed-block abstraction, DiskSec uses the
+notion of a \emph{handle} to represent a sealed block.  DiskSec requires
 the developer to perform two steps.  The first is to modify their code
 to use the sealed-block abstraction: that is, to pass around handles
-for blocks and to call \cc{seal()} and \cc{unseal()} as necessary.
+for blocks and to call \texttt{seal()} and \texttt{unseal()} as necessary.
 The second is to prove that their code correctly follows the unsealing
 rules.  This boils down to ensuring that sealed blocks are unsealed only
 when the principal has appropriate permission for that block.
 
-\sys models this by extending traditional Hoare logic to reason about
-unseal operations.  Specifically, \sys builds on CHL~\cite{chen:fscq},
+DiskSec models this by extending traditional Hoare logic to reason about
+unseal operations.  Specifically, DiskSec builds on CHL~\cite{chen:fscq},
 where functional correctness specifications are written in terms of
-pre- and postconditions.  \sys, first, extends the execution semantics
+pre- and postconditions.  DiskSec, first, extends the execution semantics
 (as we describe next) to produce an \emph{unseal trace} consisting of
 unseal operations and, second, extends the specifications to require
 that the unseal trace contain only allowed unseals.
 
-We expect that systems built on top of \sys would often group multiple
+We expect that systems built on top of DiskSec would often group multiple
 blocks into a single object (e.g., multiple blocks comprising a single
 file in a file system).  To help developers reason about all of these
-blocks sharing the same permissions, \sys introduces the notion of
+blocks sharing the same permissions, DiskSec introduces the notion of
 a \emph{domain}.  This is a layer of indirection between blocks and
 permissions.  Specifically, sealed blocks point to a domain ID (e.g.,
 an inode number in the case of a file system), and the domain in turn
@@ -268,7 +268,7 @@ in the inode's data structure).
 
 \paragraph{Execution model.}
 
-\sys's execution model requires the implementation to be written in a
+DiskSec's execution model requires the implementation to be written in a
 domain-specific language, based on CHL and implemented inside of Coq,
 which provides several primitive operations.  These operations include
 reading and writing the disk, manipulating sealed blocks by sealing and
@@ -281,66 +281,66 @@ flushing disk writes, etc.
   \label{fig:exec}
 \end{figure}
 
-\autoref{fig:exec} shows a simplified version of \sys's execution
+\ref{fig:exec} shows a simplified version of DiskSec's execution
 semantics.  The semantics are defined as a function that takes the
-\cc{code} being executed (of type \cc{proc T}), the principal \cc{u}
-running the operation (of type \cc{Principal}), and the starting state \cc{st}
-(of type \cc{State}).  The function
-produces a tuple consisting of a result (of type \cc{result T}) and
-a trace of unsealed permissions (of type \cc{trace}).  The function
-is allowed to return \cc{None} (as indicated by the \cc{option} type)
+\texttt{code} being executed (of type \texttt{proc T}), the principal \texttt{u}
+running the operation (of type \texttt{Principal}), and the starting state \texttt{st}
+(of type \texttt{State}).  The function
+produces a tuple consisting of a result (of type \texttt{result T}) and
+a trace of unsealed permissions (of type \texttt{trace}).  The function
+is allowed to return \texttt{None} (as indicated by the \texttt{option} type)
 when there is no execution possible for the supplied randomness (e.g.,
 the randomly chosen handle is already in use).
 
-For example, consider the case that handles the \cc{Read a} operation,
-which describes the execution of reading address \cc{a} from disk.
-There are three sub-cases.  If the address is out of bounds, the \cc{Read}
+For example, consider the case that handles the \texttt{Read a} operation,
+which describes the execution of reading address \texttt{a} from disk.
+There are three sub-cases.  If the address is out of bounds, the \texttt{Read}
 returns a handle for a zero block, with an empty unseal trace.  If the handle
-\cc{h} supplied by the randomness oracle is already in use, no execution
-is possible.  Otherwise, the \cc{Read} initializes the new handle to
-represent the block from address \cc{a}, with the block's domain ID, and
+\texttt{h} supplied by the randomness oracle is already in use, no execution
+is possible.  Otherwise, the \texttt{Read} initializes the new handle to
+represent the block from address \texttt{a}, with the block's domain ID, and
 returns that handle, with an empty trace because no blocks were unsealed.
 
-As another example, the \cc{Unseal h} operation produces a nonempty trace,
-consisting of the permission of the sealed block whose handle \cc{h}
-was unsealed, as long as the handle was valid (otherwise, \cc{Unseal}
-returns zero).  Since the sealed block points to a domain ID, \cc{dom},
-the semantics of \cc{Unseal} look up the corresponding permissions of
+As another example, the \texttt{Unseal h} operation produces a nonempty trace,
+consisting of the permission of the sealed block whose handle \texttt{h}
+was unsealed, as long as the handle was valid (otherwise, \texttt{Unseal}
+returns zero).  Since the sealed block points to a domain ID, \texttt{dom},
+the semantics of \texttt{Unseal} look up the corresponding permissions of
 that domain.  One omitted rule handles concatenation of unseal traces when a
 developer sequences one statement after another.
 
-The \cc{ChangePerm dom newperm} operation allows the developer to
+The \texttt{ChangePerm dom newperm} operation allows the developer to
 change permissions of a domain.  This operation is used in implementing
-\cc{chown}.  The semantics of \cc{ChangePerm} modify the permission
+\texttt{chown}.  The semantics of \texttt{ChangePerm} modify the permission
 associated with the domain, and produce an unseal trace containing the domain's
 old permission, to reflect that data with that permission may have
 been disclosed.  Since the domains are purely a proof construct,
-\cc{ChangePerm} is a purely logical operation, which does not perform
+\texttt{ChangePerm} is a purely logical operation, which does not perform
 any actions at runtime.
 
 %%% Rewrite this to remove oracles
 {\color{red} Rewrite this to remove oracles. }\\
-Finally, \cc{exec} describes the possible crash behaviors of the system.
-For example, the case for \cc{\_, CrashHere} states that it is possible to
+Finally, \texttt{exec} describes the possible crash behaviors of the system.
+For example, the case for \texttt{\_, CrashHere} states that it is possible to
 crash in the starting state, regardless of what code was being executed,
-if the randomness oracle tells us \cc{CrashHere}.  A combination
+if the randomness oracle tells us \texttt{CrashHere}.  A combination
 of other rules, not shown, allow crashing in the middle of a sequence of
-operations.  The very first case, for \cc{ChangePerm \_ \_, CrashHere},
-says that \cc{ChangePerm} cannot crash.  This reflects the fact that
-\cc{ChangePerm} is a purely logical operation.
+operations.  The very first case, for \texttt{ChangePerm \_ \_, CrashHere},
+says that \texttt{ChangePerm} cannot crash.  This reflects the fact that
+\texttt{ChangePerm} is a purely logical operation.
 
 {\color{red} Rewrite Ends Here. }\\
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \paragraph{Specification and verification of unseal rules.}
 
-\sys requires developers to write specifications for each procedure, using
+DiskSec requires developers to write specifications for each procedure, using
 pre- and postconditions.  The postcondition describes how the procedure
 modifies the state of the system, along with what must be true of the procedure's
 return value, assuming that the precondition (a predicate over the system
 state and the procedure's arguments) held at the start of the procedure.
 
-To reason about what blocks a procedure might unseal, \sys augments
+To reason about what blocks a procedure might unseal, DiskSec augments
 specification postconditions with requirements about the permissions
 that appear in the unseal trace produced by the execution of the procedure.
 
@@ -350,23 +350,23 @@ that appear in the unseal trace produced by the execution of the procedure.
   \label{fig:unseal-safety}
 \end{figure}
 
-\autoref{fig:unseal-safety} shows \sys's definition of unseal safety.
-This definition says that procedure \cc{p} is ``unseal-safe'' if,
-for every principal \cc{u} that runs this procedure and any starting
-state \cc{st}, all permissions produced by this procedure in its unseal trace
-\cc{tr} will be accessible to the calling principal.
+\ref{fig:unseal-safety} shows DiskSec's definition of unseal safety.
+This definition says that procedure \texttt{p} is ``unseal-safe'' if,
+for every principal \texttt{u} that runs this procedure and any starting
+state \texttt{st}, all permissions produced by this procedure in its unseal trace
+\texttt{tr} will be accessible to the calling principal.
 %(This definition
-%is simplified from \sys's actual implementation, because \sys's real
+%is simplified from DiskSec's actual implementation, because DiskSec's real
 %definition appears in the postcondition of a more complex
-%functional-correctness statement about all possible executions of \cc{p}.)
+%functional-correctness statement about all possible executions of \texttt{p}.)
 Proving unseal safety leads to a proof obligation for the file-system
 developer---namely, proving that the implementation will unseal a block
 only if the current principal has access to it.
 
 File-system implementation code falls into three categories with respect
 to proving unseal safety.  The first category are procedures that do not
-invoke any \cc{Unseal} operations.  For these procedures, the resulting
-unseal trace is always empty, and \sys is able to prove unseal safety without
+invoke any \texttt{Unseal} operations.  For these procedures, the resulting
+unseal trace is always empty, and DiskSec is able to prove unseal safety without
 any developer input.  Most of the file-system code falls in this category.
 
 The second category are procedures that unseal public blocks.
@@ -384,12 +384,12 @@ are public. The developer can assume this invariant within any implementation of
 the block allocator API, which helps her prove that the block in question has
 public permissions. In turn the developer must prove that the invariant is
 preserved by every procedure (including across crashes and recovery), and show
-that it is established at initialization time by \cc{mkfs}.
+that it is established at initialization time by \texttt{mkfs}.
 
 The final category are procedures that unseal private blocks.  In a
-file system, this happens only in the implementation of the \cc{read}
+file system, this happens only in the implementation of the \texttt{read}
 system call, which returns file data to the caller.  The implementation (wrapper)
-of the \cc{read} system call contains explicit code to obtain the current
+of the \texttt{read} system call contains explicit code to obtain the current
 principal, get the file's ACL (access control list) from the inode, and
 compare them.  The developer's job is to prove that this code correctly
 performs the permission check.  This proof typically relies on the
@@ -398,24 +398,24 @@ is tagged with a permission matching the ACL stored in the inode.
 
 \begin{figure}[ht]
   \input{templates/figures/unseal-public}
-  \caption{Definition of \cc{unseal\_public}.}
+  \caption{Definition of \texttt{unseal\_public}.}
   \label{fig:unseal-public}
 \end{figure}
 
-\sys also provides a stronger version of unseal-safety, as shown in
-\autoref{fig:unseal-public}, called \cc{unseal\_public}.  A procedure
+DiskSec also provides a stronger version of unseal-safety, as shown in
+\ref{fig:unseal-public}, called \texttt{unseal\_public}.  A procedure
 satisfies this definition if all of its code falls in the first two
 categories above: that is, the procedure either unseals no blocks
 at all or unseals only public blocks.  This alternative definition is
 strictly stronger than unseal-safety; any procedure that satisfies
-\cc{unseal\_public} is also unseal-safe.  The distinction between these
+\texttt{unseal\_public} is also unseal-safe.  The distinction between these
 two notions will help the developer prove noninterference theorems,
-as we will describe in \autoref{s:design:prove}.
+as we will describe in \ref{s:design:prove}.
 
 \paragraph{Crashes.}
 
-\sys's approach naturally extends to reasoning about crashes.
-\sys's disk-crash model builds on the CHL model of disk
+DiskSec's approach naturally extends to reasoning about crashes.
+DiskSec's disk-crash model builds on the CHL model of disk
 crashes~\cite{chen:fscq, chen:dfscq}.  After a crash, disk blocks can
 be updated nondeterministically, as in CHL, based on outstanding writes
 that are in the disk's write buffer but have not been flushed yet to
@@ -425,7 +425,7 @@ block is updated atomically together with its domain ID\@.
 
 All handles are invalidated after a crash, to model the fact that the
 computer reboots and all in-memory state is lost.  All recovery code,
-such as log replay or \cc{fsck}, is proven correct in \sys, which means
+such as log replay or \texttt{fsck}, is proven correct in DiskSec, which means
 that it must follow the same block-sealing rules as the rest of the
 file-system code.  This ensures that no data can be disclosed by the
 recovery code.
@@ -434,17 +434,17 @@ recovery code.
 \subsection{Proving noninterference}
 \label{s:design:prove}
 
-To help the developer prove the two types of noninterference, \sys
-provides helper theorems.  \autoref{fig:unseal-to-ret} shows the first
+To help the developer prove the two types of noninterference, DiskSec
+provides helper theorems.  \ref{fig:unseal-to-ret} shows the first
 one, which proves return-value noninterference based on unseal-safety.
-\sys proves this theorem by considering all operations performed by
-procedure \cc{p}.  Each operation must produce the same result in the
+DiskSec proves this theorem by considering all operations performed by
+procedure \texttt{p}.  Each operation must produce the same result in the
 two executions being considered, since the states are equivalent for the
-principal in question, \cc{u}.  The only way in which the executions
+principal in question, \texttt{u}.  The only way in which the executions
 could differ is if they unsealed a block that was not accessible
-to \cc{u}.  However, \cc{unseal\_safe} says that this is impossible.
-This theorem also applies to procedures that are \cc{unseal\_public},
-since that notion is strictly stronger than \cc{unseal\_safe}.
+to \texttt{u}.  However, \texttt{unseal\_safe} says that this is impossible.
+This theorem also applies to procedures that are \texttt{unseal\_public},
+since that notion is strictly stronger than \texttt{unseal\_safe}.
 
 \begin{figure}[ht]
   \input{templates/figures/unseal-to-ret}
@@ -452,31 +452,31 @@ since that notion is strictly stronger than \cc{unseal\_safe}.
   \label{fig:unseal-to-ret}
 \end{figure}
 
-\autoref{fig:unseal-to-state} shows the second theorem provided by \sys,
+\ref{fig:unseal-to-state} shows the second theorem provided by DiskSec,
 for reasoning about state noninterference.  This theorem requires that
-the procedure satisfy the stronger definition, \cc{unseal\_public}, to
+the procedure satisfy the stronger definition, \texttt{unseal\_public}, to
 ensure state noninterference.  The intuition for why this theorem is
 true lies in the fact that a procedure that unseals only public blocks
 cannot obtain any confidential data in the first place.  As a result,
 this procedure's execution will be identical regardless of the contents of
 confidential blocks, and thus the state after this procedure's execution
-will remain equivalent from the adversary's point of view.  \sys proves
+will remain equivalent from the adversary's point of view.  DiskSec proves
 this theorem formally in Coq.
 
 \begin{figure}[ht]
   \input{templates/figures/unseal-to-state}
-  \caption{Theorem connecting \cc{unseal\_public} to state noninterference.}
+  \caption{Theorem connecting \texttt{unseal\_public} to state noninterference.}
   \label{fig:unseal-to-state}
 \end{figure}
 
-\sys does not provide a general-purpose theorem for reasoning about state
+DiskSec does not provide a general-purpose theorem for reasoning about state
 noninterference for procedures that satisfy only the weaker notion of
-unseal-safety (i.e., that unseal private blocks), such as the \cc{read()}
+unseal-safety (i.e., that unseal private blocks), such as the \texttt{read()}
 system call.  Such procedures can indirectly disclose data as
-described in \autoref{s:goal:chal} to legitimately unseal confidential
+described in \ref{s:goal:chal} to legitimately unseal confidential
 data on behalf of the currently executing principal but then stash a
 copy of it.  It is up to the file-system developer to prove the state
-noninterference of those procedures.  \autoref{s:fs} will discuss in
-more detail how \sfscq structures its implementation to simplify these
-proofs; in the case of \sfscq, the only system call that requires this
-type of reasoning is \cc{read}.
+noninterference of those procedures.  \ref{s:fs} will discuss in
+more detail how SFSCQ structures its implementation to simplify these
+proofs; in the case of SFSCQ, the only system call that requires this
+type of reasoning is \texttt{read}.

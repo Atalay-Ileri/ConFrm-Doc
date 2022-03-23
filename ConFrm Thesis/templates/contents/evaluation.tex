@@ -12,57 +12,57 @@ This section experimentally answers the following questions:
 
 \item 
   How are the performances of the systems compare to existing ones?
-  %How much runtime overhead does \sys's approach impose in \sfscq?
+  %How much runtime overhead does DiskSec's approach impose in SFSCQ?
 \end{itemize}
 
 \subsection{Specification trustworthiness}
 
-To evaluate the trustworthiness of \sfscq's specifications, we performed several
+To evaluate the trustworthiness of SFSCQ's specifications, we performed several
 analyses.
 
 
 \paragraph{End-to-end application confidentiality.}
 
-To demonstrate that \sfscq's specifications capture confidentiality in
-a useful way, we developed a simple application on top of \sfscq that
+To demonstrate that SFSCQ's specifications capture confidentiality in
+a useful way, we developed a simple application on top of SFSCQ that
 copies a file, wrote a confidentiality specification for this application
 (namely, that the application does not leak the data of the copied
-file), and proved it.  This application tests two aspects of \sfscq's
-specs.  The first is, does \sfscq's specification actually guarantee
-confidentiality?  The second has to do with \sfscq's discretionary access
+file), and proved it.  This application tests two aspects of SFSCQ's
+specs.  The first is, does SFSCQ's specification actually guarantee
+confidentiality?  The second has to do with SFSCQ's discretionary access
 control model: can application developers demonstrate that they are not
 inadvertently leaking data, despite having the discretion to do so?
 
 We were able to prove the correctness and security of our implementation
-of \cc{cp}.  This suggests that \sfscq's specifications capture sufficient
-information for \cc{cp} to conclude that its data remains confidential,
+of \texttt{cp}.  This suggests that SFSCQ's specifications capture sufficient
+information for \texttt{cp} to conclude that its data remains confidential,
 and that it is possible for application developers to show that they do
 not abuse their discretionary privileges by leaking data.
 
 
 \paragraph{Bug case study.}
 
-To evaluate whether \sfscq's specifications would eliminate real
+To evaluate whether SFSCQ's specifications would eliminate real
 security bugs, we qualitatively analyzed the bugs presented in
-\autoref{s:motivation} to determine whether \sfscq's theorems preclude
-the possibility of that bug.  \autoref{fig:bugs-addressed} shows the
+\ref{s:motivation} to determine whether SFSCQ's theorems preclude
+the possibility of that bug.  \ref{fig:bugs-addressed} shows the
 results.  Functional correctness theorems preclude the possibility of
-integrity bugs.  \sys state noninterference precludes the possibility
+integrity bugs.  DiskSec state noninterference precludes the possibility
 of all confidentiality bugs in our study.  No bugs were prevented by
 return-value noninterference, because return-value noninterference captures a
 particularly simple kind of bug, such as the file system forgetting
-to check the ACL on \cc{open()}.  No file-system developers made this
+to check the ACL on \texttt{open()}.  No file-system developers made this
 mistake in our study.  Nonetheless, return noninterference is important
-for completeness of \sfscq's theorems.  Overall, the results demonstrate
-that \sfscq's theorems preclude the possibility of all studied bugs.
+for completeness of SFSCQ's theorems.  Overall, the results demonstrate
+that SFSCQ's theorems preclude the possibility of all studied bugs.
 
 \begin{figure}[ht]
   \centering
   \small
   \begin{tabular}{@{}p{2.4in}p{0.5in}@{}}
-    \toprule
-    \multirow{2}{*}{\textbf{Description}} & \textbf{Theorem} \\ & \textbf{violated} \\
-    \midrule
+    %\toprule
+    %\multirow{2}{*}{\textbf{Description}} & \textbf{Theorem} \\ & \textbf{violated} \\
+    %\midrule
     anyone can change POSIX ACLs~\cite{CVE-2010-2071, CVE-2010-1641, CVE-2016-1237} & state NI \\
     reiserfs permissions can be changed \\ \quad by writing to hidden file~\cite{CVE-2010-1146} & state NI \\
     truncated data can be accessed~\cite{CVE-2015-8374}
@@ -75,7 +75,7 @@ that \sfscq's theorems preclude the possibility of all studied bugs.
     % write confidentiality, but \emph{N/A}\footnote{any SGID, writeable
     % directory violates write confidentiality, but no support or model of
     % SUID/SGID} \\
-    \bottomrule
+    %\bottomrule
   \end{tabular}
   \caption{Security bugs in Linux file systems and which SFSCQ theorem precludes them.}
   \label{fig:bugs-addressed}
@@ -101,59 +101,59 @@ non-determinism must be independent of confidential data.  All proofs in the fra
 % these numbers were computed by the scripts in
 % osdi18-security/effort-estimate/; see the README.md there for details.
 
-To understand how much effort was required to verify \sys and \sfscq, we
-compared \sfscq to the implementation of DFSCQ on which \sfscq is based.
-\autoref{fig:loc} shows the results (counting the sum of lines removed and lines
+To understand how much effort was required to verify DiskSec and SFSCQ, we
+compared SFSCQ to the implementation of DFSCQ on which SFSCQ is based.
+\ref{fig:loc} shows the results (counting the sum of lines removed and lines
 added), breaking down the differences into several categories.  The core
 infrastructure, including improvements to DFSCQ's CHL, amounted to around
-9,300 lines.  We made significant changes to DFSCQ to develop \sfscq, but many
+9,300 lines.  We made significant changes to DFSCQ to develop SFSCQ, but many
 of these changes were mechanical fixes to proofs to address small changes. In
-addition, using \sys in \sfscq required around 1,900 lines of new code and proofs.
-Porting DFSCQ to the first version of \sys (without support for changing
+addition, using DiskSec in SFSCQ required around 1,900 lines of new code and proofs.
+Porting DFSCQ to the first version of DiskSec (without support for changing
 permissions) took one author about 3 months, and another 2 months to
 mostly finish support for permission changes.
 
 \begin{figure}[ht]
   \centering
   \begin{tabular}{lr}
-    \toprule
+    %\toprule
     \textbf{Component} & \textbf{Changes to DFSCQ} \\
-    \midrule
-    \sys & 9,283 \\
+    %\midrule
+    DiskSec & 9,283 \\
     DFSCQ proof fixes & $-10,471$, $+26,433$ \\
     & \quad (36,094 total) \\
-    \sfscq impl.\ and proofs & 1,837 \\
-    Verified \cc{cp} application & 407 \\
-    \bottomrule
+    SFSCQ impl.\ and proofs & 1,837 \\
+    Verified \texttt{cp} application & 407 \\
+    %\bottomrule
   \end{tabular}
-  \caption{Lines of code change required to implement \sys and apply it to build
-    \sfscq. Counts measure the diff between DFSCQ and \sfscq.}
+  \caption{Lines of code change required to implement DiskSec and apply it to build
+    SFSCQ. Counts measure the diff between DFSCQ and SFSCQ.}
   \label{fig:loc}
 \end{figure}
 
 
 \subsection{Performance}
 
-We expect that the performance overhead of \sys is nearly zero, because
+We expect that the performance overhead of DiskSec is nearly zero, because
 most of its code changes (such as handles, sealing, and unsealing) are
 eliminated in the process of generating executable code.  (All of the
-Seal and Unseal operations turn into \cc{return} statements.)  The only
+Seal and Unseal operations turn into \texttt{return} statements.)  The only
 exception is checking permissions when reading data from a file; the
 original DFSCQ implementation had no permission checks, which we added
-in \sfscq.
+in SFSCQ.
 
-To check that \sys introduces almost no overhead,
+To check that DiskSec introduces almost no overhead,
 we used two microbenchmarks (LFS smallfile and largefile
 benchmarks~\cite{rosenblum:lfs} as modified by DFSCQ~\cite{chen:dfscq}).
-As a baseline, we compare with two versions of DFSCQ, on which \sfscq
+As a baseline, we compare with two versions of DFSCQ, on which SFSCQ
 is based.  The first is unmodified DFSCQ\@.  The second is a version of
 DFSCQ with a two-disk-barrier write-ahead log (instead of its default
-checksum-based log).  This matches the modification we made to \sfscq, as
-mentioned in \autoref{s:fs:impl}.  For comparison with other file systems,
+checksum-based log).  This matches the modification we made to SFSCQ, as
+mentioned in \ref{s:fs:impl}.  For comparison with other file systems,
 such as Linux ext4, we refer the reader to the detailed evaluation in
 the DFSCQ paper~\cite[\S 7.4]{chen:dfscq}.
 
-\autoref{fig:perf} shows the results, which confirm that \sfscq performs
+\ref{fig:perf} shows the results, which confirm that SFSCQ performs
 nearly identically to DFSCQ in the same logging configuration.  The use
 of a two-disk-barrier write-ahead log incurs some performance overhead
 for smallfile; largefile performance is not impacted because its file
@@ -162,13 +162,13 @@ data writes bypass the log.
 \begin{figure}[ht]
   \centering
   \begin{tabular}{lrr}
-    \toprule
+    %\toprule
     \textbf{Filesystem} & \textbf{smallfile} & \textbf{largefile} \\
-    \midrule
+    %\midrule
     DFSCQ & 446 files/s & 108 MB/s \\
     DFSCQ (no checksums) & 295 files/s & 109 MB/s \\
-    \sfscq & 299 files/s & 100 MB/s \\
-    \bottomrule
+    SFSCQ & 299 files/s & 100 MB/s \\
+    %\bottomrule
   \end{tabular}
   \caption{Benchmarks showing performance of SFSCQ compared to DFSCQ and a
     version of DFSCQ with a comparable logging implementation.  Numbers

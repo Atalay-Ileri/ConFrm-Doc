@@ -9,50 +9,50 @@ producing the SFSCQ verified secure file system, as described below.
 \subsection{Specifying security}
 
 The core specification of confidentiality for SFSCQ lies in the
-write system call, as shown in XXX.  This
+write system call, as shown in \ref{}.  This
 specification says that the \emph{data} argument to the {write}
 system call remains confidential.  This is stated formally by
 considering two different executions, starting from the same
-state {st}, where different data ({data0} and {data1})
-are written to the same offset {off} of the same file {f}.
-The results, {res0} and {res1}, must be equivalent for any
-adversary {adv} that does not have permission to access file {f}.
+state \texttt{st}, where different data (\texttt{data0} and \texttt{data1})
+are written to the same offset \texttt{off} of the same file \texttt{f}.
+The results, \texttt{res0} and \texttt{res1}, must be equivalent for any
+adversary {adv} that does not have permission to access file \texttt{f}.
 Since {equivalent\_state\_for\_principal} considers both crashing and
 noncrashing executions, this definition ensures that the data passed to
-{write} remains confidential regardless of whether the system crashes
+\texttt{write} remains confidential regardless of whether the system crashes
 or not.
 
 \begin{figure}[ht]
   \input{templates/figures/writespec}
-  \caption{Confidentiality specification for the \cc{write} system call.}
+  \caption{Confidentiality specification for the \texttt{write} system call.}
   \label{fig:writespec}
 \end{figure}
 
-The other part of the security specification lies in the {chown}
+The other part of the security specification lies in the \texttt{chown}
 system call, which changes the permissions on existing files, and thus
-affects what data is or is not confidential.  Because {chown} can
+affects what data is or is not confidential.  Because \texttt{chown} can
 disclose the contents of a previously confidential file, the standard
-definition of state non-interference from XXX
-does not hold for {chown}.  Specifically, even if an adversary
-{viewer} could not distinguish states {st0} and {st1} before some
-{caller} executed {chown}, the adversary may nonetheless be able
-to distinguish {st0} and {st1} after the {chown} runs because
+definition of state non-interference from \ref{}
+does not hold for \texttt{chown}.  Specifically, even if an adversary
+\texttt{viewer} could not distinguish states \texttt{st0} and \texttt{st1} before some
+\texttt{caller} executed \texttt{chown}, the adversary may nonetheless be able
+to distinguish \texttt{st0} and \texttt{st1} after the \texttt{chown} runs because
 the adversary may now have permission to read the previously confidential
 file.
 
-The security of {chown} is defined by a specialized version of
+The security of \texttt{chown} is defined by a specialized version of
 state non-interference, which considers three cases.  The first case
 is that the adversary {viewer} does not have access to the file
-after the {chown} (i.e., is not the new owner).
+after the \texttt{chown} (i.e., is not the new owner).
 In this case, state non-interference holds.
 The second case is that the adversary {viewer} does gain access to
-the file after {chown} (i.e., is the new owner),
+the file after \texttt{chown} (i.e., is the new owner),
 but the file had the same contents in the
-two executions (i.e., in states {st0} and {st1}).  In this case,
-state non-interference holds as well.  Finally, the adversary {viewer}
+two executions (i.e., in states \texttt{st0} and \texttt{st1}).  In this case,
+state non-interference holds as well.  Finally, the adversary \texttt{viewer}
 may gain access to the file \emph{and} the files had different contents in
 the two executions.  In this case, state non-interference does not apply.
-XXX summarizes this formally.
+\ref{} summarizes this formally.
 
 %\begin{figure}[ht]
 %  \input{code/chownspec}
@@ -60,16 +60,16 @@ XXX summarizes this formally.
 %  \label{fig:chownspec}
 %\end{figure}
 
-The {write} and {chown} specifications, shown above, are the only
+The \texttt{write} and \texttt{chown} specifications, shown above, are the only
 parts of the security specification that are specific to the file system,
 because they define where confidential data enters the system in the
 first place, and how permissions on that confidential data can change.
 Somewhat counter-intuitively, no special treatment is required in the
-specifications of other system calls, such as {read}.  Instead, it suffices to
+specifications of other system calls, such as \texttt{read}.  Instead, it suffices to
 prove the two general noninterference theorems for all system calls
-(i.e., {ret\_noninterference} and {state\_noninterference}).
+(i.e., \texttt{ret\_noninterference} and \texttt{state\_noninterference}).
 This is because we do not want to consider specific attacks, such as
-whether {read} has a missing access-control check.  Instead, Disksec's
+whether \texttt{read} has a missing access-control check.  Instead, Disksec's
 noninterference definitions ensure that confidential data cannot be
 disclosed regardless of what system calls the adversary tries to use.
 
@@ -127,7 +127,7 @@ they manipulate (e.g., the bitmap allocator manipulating the bitmap
 blocks) and blocks that they pass through (e.g., the write-ahead log
 handling reads and writes as part of a transaction, or the file layer
 handling file reads and writes).  The first category required a module
-to access the block contents, so we added {Seal} and {Unseal}
+to access the block contents, so we added \texttt{Seal} and \texttt{Unseal}
 operations accordingly.  Virtually all operations that fell in this
 category involved sealing and unsealing public data.  For the second
 category, we did not seal or unseal the data and instead transparently
@@ -135,11 +135,11 @@ passed through the handle representing the block; as a result, the module
 was oblivious to the domain IDs associated with the disk block.
 
 Private data is sealed and unsealed at the top of the SFSCQ
-implementation; that is, in the implementation of the {read}
-and {write} system calls.  We modified the {write} system-call
-implementation to {Seal} the blocks with the file's inode number
+implementation; that is, in the implementation of the \texttt{read}
+and \texttt{write} system calls.  We modified the \texttt{write} system-call
+implementation to \texttt{Seal} the blocks with the file's inode number
 as the domain ID, before processing them further.
-We modified the {read} system call to implement the
+We modified the \texttt{read} system call to implement the
 permission-checking logic---i.e., reading the ACL from the file's inode,
 checking whether the currently running principal has access to the file,
 and unsealing the block only if the check passes.
@@ -148,11 +148,11 @@ and unsealing the block only if the check passes.
 \paragraph{Changing intermediate specifications.}
 
 We augmented the Hoare-logic specifications of all internal SFSCQ
-procedures to require that the procedure be {unseal\_public}.
+procedures to require that the procedure be \texttt{unseal\_public}.
 This change required little manual effort, because we simply changed
 the underlying definition of the Hoare-logic specification to require
-{unseal\_public}.  For the write-ahead log, we added additional
-constraints in the specification of the {log\_write} procedure,
+\texttt{unseal\_public}.  For the write-ahead log, we added additional
+constraints in the specification of the \texttt{log\_write} procedure,
 requiring that the blocks written as part of a transaction must be public,
 as described above.
 
@@ -163,7 +163,7 @@ as described above.
 \paragraph{Reproving functional correctness.}
 
 Many existing proofs in DFSCQ broke after we made the above changes.  The proofs
-broke for three reasons: there were now additional {Seal} and {Unseal}
+broke for three reasons: there were now additional \texttt{Seal} and \texttt{Unseal}
 operations in the code (e.g., the bitmap allocator now sealed and unsealed its
 bitmap blocks), the logical representation of a block changed to include a
 domain ID, and the specification changed (e.g., augmenting the invariant to
@@ -175,53 +175,53 @@ the proof argument remained unchanged.
 \paragraph{Proving unsealing.}
 
 In addition to fixing existing proofs, SFSCQ's specifications required us to prove that
-the {Unseal} operation was used correctly.  For most procedures, the
-specification required that the procedure satisfy {unseal\_public}.
+the \texttt{Unseal} operation was used correctly.  For most procedures, the
+specification required that the procedure satisfy \texttt{unseal\_public}.
 Proving that only public blocks were unsealed required us to demonstrate
 that the block was indeed public by referring to the invariant.
 
-For the implementation of the {read} system call, which unseals private
-data, we had to prove that {read} correctly implements the permission
-check in its code.  This means proving that {read} calls {Unseal}
+For the implementation of the \texttt{read} system call, which unseals private
+data, we had to prove that \texttt{read} correctly implements the permission
+check in its code.  This means proving that \texttt{read} calls \texttt{Unseal}
 only after checking permissions, and that the code for the permission
 check returns ``allowed'' only if the current principal really does have
 permission to access the file contents.  This proof mostly boiled down to
-showing that the code implementing the access-control check in {read}
+showing that the code implementing the access-control check in \texttt{read}
 matches the logical permission required by the specification.
 
 
 \paragraph{Proving noninterference.}
 
 Proving that SFSCQ provides confidentiality required us to
-prove three theorems.  The first is that {write} implements the
-specification from \autoref{fig:writespec}.  This shows that SFSCQ
-will treat data passed by an application to {write} as confidential.
-The second is that system calls satisfy {ret\_noninterference}.
+prove three theorems.  The first is that \texttt{write} implements the
+specification from \ref{fig:writespec}.  This shows that SFSCQ
+will treat data passed by an application to \texttt{write} as confidential.
+The second is that system calls satisfy \texttt{ret\_noninterference}.
 This shows that an adversary cannot use any of SFSCQ's system calls
 to learn confidential data.  The final is that all system calls satisfy
-{state\_noninterference}.  This shows that SFSCQ will not indirectly
+\texttt{state\_noninterference}.  This shows that SFSCQ will not indirectly
 leak a user's data when the user invokes an otherwise-benign
 system call.  Taken together, these theorems allow an application to
 formally conclude that its data remains private, as we show in
-\autoref{s:eval}.
+\ref{s:eval}.
 
-Proving {ret\_noninterference} was the easiest, using Disksec's theorem
-from \autoref{fig:unseal-to-ret}.  All SFSCQ procedures are proven to be
+Proving \texttt{ret\_noninterference} was the easiest, using Disksec's theorem
+from \ref{fig:unseal-to-ret}.  All SFSCQ procedures are proven to be
 unseal safe, so no further proof effort is required.
 
-Proving {state\_noninterference} was simple for all system
-calls except {read}, because those system calls satisfy {unseal\_public},
-allowing us to apply Disksec's theorem from \autoref{fig:unseal-to-state}.
+Proving \texttt{state\_noninterference} was simple for all system
+calls except {read}, because those system calls satisfy \texttt{unseal\_public},
+allowing us to apply Disksec's theorem from \ref{fig:unseal-to-state}.
 For {read}, we structured the system-call implementation in two parts:
-a {read\_helper}, which returns the handle to the data read from
-the file, and a wrapper around {read\_helper} that unseals the data
-and returns it to the user.  {read\_helper} is {unseal\_public},
-allowing us to apply Disksec's theorem from \autoref{fig:unseal-to-state}.
+a \texttt{read\_helper}, which returns the handle to the data read from
+the file, and a wrapper around \texttt{read\_helper} that unseals the data
+and returns it to the user.  \texttt{read\_helper} is \texttt{unseal\_public},
+allowing us to apply Disksec's theorem from \ref{fig:unseal-to-state}.
 The wrapper required a manual proof, but the proof was short since the
 wrapper is two lines of code.
 
-Finally, to prove that {write} meets its confidentiality specification,
-we similarly split {write} into a wrapper and a {write\_helper}.
+Finally, to prove that \texttt{write} meets its confidentiality specification,
+we similarly split \texttt{write} into a wrapper and a \texttt{write\_helper}.
 The wrapper's job is to seal all input data and pass the handles to
-{write\_helper}.  Much as with {read}, this reduced the proof effort
+\texttt{write\_helper}.  Much as with \texttt{read}, this reduced the proof effort
 to just the wrapper.

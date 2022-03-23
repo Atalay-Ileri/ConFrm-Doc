@@ -1,1 +1,95 @@
 \chapter{Related Work}
+Our work builds on a diverse body of prior work. We will explain these works throughout this section. 
+
+\paragraph{Noninterference properties.} There is a significant body of work about formalizing noninterference properties \cite{19, 25, 26, 29, 30, 32}. DiskSec and ConFrm’s noninterference definitions build upon this existing work. Specifically, data noninterference can be thought of as a specialization of
+abstract noninterference~\cite{giacobazzi:abstract}, relaxed
+noninterference~\cite{li:relaxed}, or observation
+functions~\cite{costanzo:certikos-infoflow}.  One difference in our approach is that
+data noninterference stops at the file-system API boundary; applications are
+not subject to data-noninterference policies.  This matches well the
+traditional discretionary access-control policies enforced by file systems.
+
+Formalizing data noninterference requires reasoning about two executions, since
+confidentiality is a two-safety property~\cite{terauchi:safety}.  In this
+context, our contribution lies in a specification and a proof style based on
+sealed blocks that helps us
+prove a data-noninterference two-safety property about the file system.
+
+
+
+ConFrm’s definition is different from its predecessors in how it treats nondeterminism in its formalism. ConFrm takes a more fine-grained approach in relating nondeterministic executions by requiring a strong coupling between executions for each nondeterministic execution branch. 
+
+%rewrite this for paper
+\paragraph{Machine-checked security in systems.} 
+Several prior projects have proven security (and specifically confidentiality) properties about their system implementations: seL4 \cite{23, 26}, CertiKOS \cite{15}, and Ironclad \cite{20}. For seL4 and CertiKOS, the theorems prove complete isolation: CertiKOS requires disabling IPC to prove its security theorems, and seL4’s security theorem requires disjoint sets of capabilities. In the context of a file system, complete isolation is not possible: one of the main goals of a file system is to enable sharing. Furthermore, CertiKOS is limited to proving security via deterministic specifications. Nondeterminism is important in a file system to handle crashes and to abstract away implementation details in specifications. 
+
+Ironclad proves that several applications, such as a notary service and a password-hashing application, do not disclose their own secrets (e.g., a private key), formulated as noninterference. Also using noninterference, Komodo \cite{17} reasons about confidential data in an enclave and shows that an adversary cannot learn the confidential data. Ironclad and Komodo’s approach cannot specify or prove a file system: both systems have no notion of a calling principal or support for multiple users, and there is no possibility of returning confidential data to some principals (but not others). Finally, there is no support for nondeterministic crashes.
+
+DiskSec supports nondeterministic crashes, discretionary access control, and shared data structures. However, it lacks support for branching on confidential data (e.g. hash-based logging), abstraction layers, and provides weaker guarantees for crashes.
+
+ConFrm's contributions complement this line of work. ConFrm provides tools that allow developers to preserve confidentiality while creating abstraction layers. However, it uses a specific confidentiality definition. Even though the definition can be customized via defining different state equivalence relations, it may not express an arbitrary confidentiality specification.
+
+\paragraph{Information flow and type systems.} 
+
+Another approach to ensuring confidentiality involves relying on type systems. An advantage of this approach is that type checking can be automated to reduce proof load for the developer. 
+
+%Readd this in thesis
+%Type systems and static-analysis algorithms, as with Jif’s labels [27, 28] and the UrFlow analysis [14], have been developed to reason about information-flow properties of application code. However, these analyzers would be hard to use for reasoning about data structures inside of a file system (such as a write-ahead log or a buffer cache) that contain data from different users.
+
+Although this does not give a machine-checked theorem of security,
+we build on aspects of this approach, namely, the sealed disk has
+typed blocks.
+
+Type systems and static-analysis algorithms, as with Jif's labels~\cite{myers:jif, myers:jflow97}
+or the UrFlow analysis~\cite{chlipala:urflow}, have been developed to reason about
+information-flow properties of application code.  However, these analyzers
+are static and would be hard to use for reasoning
+about data structures inside of a file system (such as a
+write-ahead log or a buffer cache) that contain data from different users.
+
+%% Program-analysis tools, such as INFER~\cite{calcagno:infer}, can be thought
+%% of as adding types after-the-fact.  They are effective at finding
+%% certain classes of bugs that can be captured with relatively simple
+%% invariants but would not be able to prove data confidentiality in a
+%% shared write-ahead log.
+
+Dynamic tools, such as Jeeves and Jacqueline~\cite{yang:jeeves, yang:jacqueline}
+and Resin~\cite{yip:resin}, deal with dynamic data structures but
+require sophisticated and expensive runtime enforcement mechanisms. DiskSec and ConFrm avoids
+the overhead of runtime enforcement and an additional trusted runtime checker.
+
+SeLoc \cite{seloc} uses double weakest preconditions to prove noninterference for fine-grained concurrent programs. It is built on top of IRIS \cite{iris}, a separation logic-based framework that proves correctness of fine-grained concurrent programs. It provides a confidentiality-ensuring type system and a wide array of tools to the developers. However, employing SeLoc requires using IRIS, which adds a substantial entry barrier. Conversely, both Disksec and ConFrm is standalone and lightweight, but does not offer the full array of tools SeLoc offers. 
+
+\paragraph{Formalizing file-system security.}
+
+Prior work has extensively studied the security
+guarantees provided by file systems, both formally and
+informally~\cite{posix-security}.  However, none of the prior
+work articulated a precise, machine-checkable model and specification
+for file-system security.
+
+\paragraph{Symbolic models of cryptography.}
+
+Our proof strategy in DiskSec is related to the techniques introduced to reason about
+cryptographic protocols.  Many cryptographic-protocol proofs are done
+in the Dolev-Yao model of perfect cryptography~\cite{dolev:protocols}.
+There programs are modeled as algebraic expressions, which developers reason
+about using equational axioms, like that decryption is the inverse of
+encryption, when called with identical symmetric keys.  No equations
+allow breaking encryption without knowing the key.  This model is
+attractive for its simplicity, and protocol-analysis tools like
+ProVerif~\cite{blanchet:proverif} and Tamarin~\cite{schmidt:tamarin}
+build on it.  HACL*~\cite{zinzindohoue:haclstar} uses a similar proof
+strategy for proving its cryptographic library. DiskSec's block-sealing
+abstraction extends this idea with the notion of a permission associated
+with each sealed block.
+
+
+\paragraph{Sequential composability and confidentiality preserving refinements.} 
+Since it is known that traditional noninterference is not preserved in simulation based refinements, there is a body of work that tries to identify the conditions that make refinements noninterference preserving. 
+
+Sun et. al. \cite{sun} proposes two confidentiality properties for interface automata: SIR-GNNI and RRNI. Both properties are based on refinements and defined relative to arbitrary security lattices. They also provide sufficient conditions that make SIR-GNNI and RRNI sequentially compositional. 
+
+Baumann et. al. \cite{baumann} formulates noninterference as an epistemic logic over trace sets. They define ignorance preserving refinements and prove that it is a sufficient condition to preserve the noninterference of abstraction. They also show that ignorance preserving refinements are not compositional w.r.t. sequential composition. They propose another class of refinements called “relational refinements”, which are sequentially compositional. 
+
+ConFrm’s definition is also sequentially compositional. Our suggested property differs from existing work in two points. First, it provides stronger guarantees for nondeterministic executions. Second, it supports reasoning about crashes and recovery of the storage system. 
