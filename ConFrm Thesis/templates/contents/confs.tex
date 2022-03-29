@@ -7,9 +7,14 @@ ConFs is a crash-safe file system implemented in Coq and its confidentiality is 
 \section{Implementation}
 We implemented ConFs as a stack of levels, each level consisting of a ConFrm language and the programs written in that language. This approach allows us to simplify the operational semantics as we implement higher level functionality. Each language is designed to model how underlying implementation and hardware behaves. Using ConFrm's language structure allow us to use the machinery and the meta-theory provided. This allowed us to encapsulate different parts of the system to only the relevant state and operations, reducing the proof effort significantly.
 
-{\color{red} Figure showing layers and parts here}.
+In the case of a language abstracting an implementation from the level below, a simulation proof is employed to ensure that language's semantics captures the behavior of the implementation. We will explain each level, starting from the bottom, in the following part. Figure \ref{fig:ConFs_Layers} shows how different parts of ConFs is organized.
 
-In the case of a language abstracting an implementation from the level below, a simulation proof is employed to ensure that language's semantics captures the behavior of the implementation. We will explain each level, starting from the bottom, in the following part.
+\begin{figure}[h]
+    \centering
+    \includegraphics[scale=0.5]{templates/figures/ConFs Layers.png}
+    \caption{Structure of ConFs}
+    \label{fig:ConFs_Layers}
+\end{figure}
 
 \subsection{ATCD Level}
 ATCD level is the lowest level of ConFs and it contains the model of the raw disk, a crypto engine, and in-memory data structure operations. Its language and state consists of five parts, implemented as ConFrm cores. These parts are disk core, crypto core, cache core, transaction list core, and the authentication core. 

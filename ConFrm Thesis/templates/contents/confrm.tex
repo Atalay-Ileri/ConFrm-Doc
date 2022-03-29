@@ -1,14 +1,22 @@
 
 %% No past tense or passive writing
 \chapter{ConFrm}
-We build ConFrm to address the challenges that ...
-
+ConFrm is a framework for proving confidentiality of storage systems. It contains a new confidentiality definition as well as structures such as language templates, execution semantics among other things to implement systems with confidentiality proofs. 
 
 \section{Specification: Relatively Deterministic Noninterference}
-ConFrm modifies data noninterference to address the non-uniform outcome probabilities challenge. In the following part we will progressively build our specification that addresses this challenge. 
+Figure \ref{fig:NI_Matching_Paths} shows that traditional noninterference definition leads to leakage of confidential data when probability of observing a return value is not uniformly distributed. To address this challenge, This thesis introduces a new confidentiality definition that takes return value frequencies into account. In the following part we will progressively build this new definition. 
 
 \subsection{Basic Definition}
-One way to solve the problem is ensuring that a program has the same return value if  same nondeterministic events happen during executions from related states. Since each execution corresponds to a specific set of nondeterministic events, aforementioned requirement prevents choosing the same execution multiple times to satisfy noninterference. Therefore such requirement ensures the existence of a 1-to-1 pairing between executions from equivalent states. Existence of a 1-to-1 pairing for executions implies that the distribution of the observed return values is preserved between equivalent states. This requirement is indeed sufficient to address our problem. Figure \ref{fig:RDNI_Matching_Paths} visualizes how the example \ref{fig:Frequency_Leaking_Program} does not satisfy the new requirement, although it satisfies the conventional definition. There is no corresponding execution from the related state if the first generated random bit is 1.
+Nondeterministic noninterference can be interpreted as "matching" of executions from equivalent states to equivalent states for some chosen relation between two states 
+%
+\footnote{In reality, nondeterministic noninterference definition does not require relation to be an equivalence. We use "equivalent states" instead of "related states" to make it clear that it is this relation we are referring to when we say "equivalent states" in other chapters.}. 
+%
+More specifically, for each execution from a state, a "matching execution" from a equivalent state is an execution with the same return value where resulting states are equivalent as well. Traditional nondeterministic noninterference definition allows multiple executions to be matched with a single execution. For example, in figure \ref{fig:NI_Matching_Paths}, same execution is matched with two other executions. This flexibility allows matching two set of executions from equivalent states to equivalent states as long as their set of possible return values are the same, no matter what the relative frequencies of the return values are.
+
+One way to ensure that observed return value frequencies are the same is, for each possible return value, requiring that the number of executions that returns it being the same from the equivalent states. This can be achieved by enforcing a 1-to-1 matching between executions from the equivalent states. If an execution can be matched with exactly one execution from a equivalent state, then we can conclude that there are same number of executions that leads to the same return value from the equivalent states.
+
+Since the nondeterminism is what leads to the multiple possible executions, each execution should be the result of some specific sequence of nondeterministic events. In other words, each sequence of nondeterministic events uniquely identifies an execution. In this model, executions are deterministic relative to a sequence of nondeterministic events. Therefore, for a particular sequence of nondeterministic events, there can be at most one execution from each equivalent state. We can enforce a 1-to-1 matching by requiring, for each sequence of nondeterministic events, there should be exactly one matching execution from a equivalent state. 
+This requirement is the core idea behind our proposed definition, and indeed sufficient to address our challenge. Figure \ref{fig:RDNI_Matching_Paths} visualizes how the example \ref{fig:Frequency_Leaking_Program} does not satisfy the new definition, although it satisfies the conventional noninterference. There is no matching execution from the equivalent state if the first generated random bit is 1. There are exactly one execution for from each state when generated bit is 1 and they have different return values.
 
 \begin{figure}[h]
     \centering
@@ -17,20 +25,20 @@ One way to solve the problem is ensuring that a program has the same return valu
     \label{fig:RDNI_Matching_Paths}
 \end{figure}
 
-We formalized the notion described above to a new definition called relatively deterministic noninterference (RDNI). First modification we made was to the execution relation. ConFrm provides an execution relation that takes a source of nondeterminism, which we call an oracle, and refers to it whenever it needs to make a nondeterministic choice, e.g. crashing or successfully executing. One important requirement is that oracle has to capture all the nondeterminism in the system. In other words, if we fix an oracle, execution should be deterministic. Since all possible nondeterminism in the system is captured by the oracle, it is possible to reason about specific series of nondeterministic events by reasoning about the oracle itself. Figure \ref{fig:RDNI_no_recovery} shows the formalization of this approach.
+We formalized the notion described above to in new definition called \emph{Relatively Deterministic NonInterference} (RDNI). RDNI uses an execution relation that takes a sequence of nondeterministic events, which we call an oracle, and refers to it whenever it needs to make a nondeterministic choice (e.g. crashing or successfully executing). One important requirement is that oracle must capture all the nondeterminism in the system. If all possible nondeterminism in the system is captured by the oracle, it is possible to reason about specific sequence of nondeterministic events by reasoning about the oracle itself. This requirement is enforced by ConFrm while defining execution semantics of a language. Figure \ref{fig:RDNI_no_recovery} shows the formalization of this approach.
 
-%Footnote between relations and equivalences
+%% I took out users from here but will add at the end.
 \begin{figure}[ht]
     \centering
     \begin{verbatim}
     Definition simple_RDNI
-        {T} (u: user) (p: prog T)
+        {T} (p: prog T)
        (R: state -> state -> Prop) :=
       forall (o: oracle) (s1 s2: state) (res1: Result T),
-        exec u o s1 p res1 ->
+        exec o s1 p res1 ->
         R s1 s2 ->
         exists res2, 
-            exec u o s2 p res2 /\
+            exec o s2 p res2 /\
             R (extract_state res1) (extract_state res2) /\
             extract_ret res1 = extract_ret res2.
     \end{verbatim}
@@ -38,25 +46,139 @@ We formalized the notion described above to a new definition called relatively d
     \label{fig:RDNI_no_recovery}
 \end{figure}
 
+Figure \ref{fig:RDNI_no_recovery} states that a program $p$ satisfies \texttt{simple\_RDNI} for any two states $s_1$ and $s_2$ related by $R$, if there is an execution of $p$ from $s_1$ with oracle $o$ that results in $res_1$, then there is an execution of $p$ from $s_2$ with oracle $o$ that with a result $res_2$ such that, states of $res_1$ and $res_2$ are related by $R$, and return values of $res_1$ and $res_2$ are equal.
+
 \subsection{Crash, Reboot, and Recovery}
+Since we will be reasoning about crash-safe systems, RDNI should be extended to take crashes, reboots and a recovery into account. We achieve this by changing the execution semantics in the definition with one that captures the entire process of crash-reboot-recovery. There are  important differences in new execution semantics that needs to be explained. 
+
+First is execution relation taking two program arguments, program to run and a recovery program. 
+
+Second is how the state after a crash followed by a reboot handled. Effects of a reboot of a system may be complicated and sometimes even nondeterministic. One example of this is an asynchronous disk. When a system crashes and reboots, the disk can be in one of the multiple possible states nondeterministically due to buffered and reordered writes. To capture and quantify this source of nondeterminism, we introduce  \emph{reboot state functions} \--- or \emph{reboot functions} for short. A reboot function takes a state after a crash and returns the state that the system will be after a reboot. Reboot functions make effects of the reboot on a state deterministic, due to the fact that outcome of a function application is deterministic. Similar to the oracles, different outcomes of a nondeterministic reboot is represented by different reboot functions.
+
+Third is that, execution semantics of a crash-reboot-recovery process must capture multiple crash and recovery attempts. One way to achieve that is providing semantics for execution of the original program followed by the multiple consecutive executions of a recovery program. Since each execution requires an oracle and each crash requires a reboot function to determine after-reboot state, new execution semantics will take a list of oracles and a list of reboot functions. We will explain further details of how executions with recovery implemented in the following section. Figure \ref{fig:RDNI_recovery} shows the formalization with recovery executions.
+
+\begin{figure}[ht]
+    \centering
+    \begin{verbatim}
+Definition RDNI_with_recovery
+    {T} (p: prog T) 
+    (rec: prog unit)
+    (R: state -> state -> Prop) :=
+  forall (l_o: list oracle) 
+  (l_rf: list (state -> state))
+  (s1 s2: state) (res1: Result T),
+    exec_with_recovery l_o s1 l_rf p rec res1 ->
+    R s1 s2 ->
+    exists res2,
+        exec_with_recovery l_o s2 l_rf p rec res2 /\
+        R (extract_state res1) (extract_state res2) /\
+        extract_ret res1 = extract_ret res2.
+    \end{verbatim}
+    \caption{RDNI with recovery executions.}
+    \label{fig:RDNI_recovery}
+\end{figure}
+
+{\color{red} One paragraph explaining the changes.}
+
+
+\subsection{Application specific changes}
+There are some application specific changes we made to RDNI. First is the addition of a user to the execution semantics. This change allows us to model multi-user systems and discretionary access control.
+
+Second is conditioning return value equality on a predicate for the user. This way, we can require return value equivalence to hold only for certain users, which is needed to state confidentiality of multi-user systems. For example return value equality is required when the theorem is about adversaries' executions but not needed when it is about normal user's executions.
+
+Third is changing the definition to be about the execution of two programs instead of the same one. This change enables us to reason about functions with different input arguments, because a ConFrm program is a function and its arguments together. 
+With these changes, we reach our final definition for RDNI, which is shown in Figure \ref{fig:RDNI_final}.
+
+\begin{figure}[ht]
+    \centering
+    \begin{verbatim}
+    Definition RDNI
+        {T} (u: user) (p1 p2: prog T) 
+        (rec: prog unit)
+       (R: state -> state -> Prop) 
+       (cond: user -> Prop):=
+      forall (l_o: list oracle) (l_rf: list (state -> state))
+      (s1 s2: state) (res1: Result T),
+        exec_with_recovery u l_o s1 l_rf p1 rec res1 ->
+        R s1 s2 ->
+        exists res2,
+            exec_with_recovery u l_o s2 l_rf p2 rec res2 /\
+            R (extract_state res1) (extract_state res2) /\
+            (cond u -> extract_ret res1 = extract_ret res2).
+    \end{verbatim}
+    \caption{Final definition of RDNI}
+    \label{fig:RDNI_final}
+\end{figure}
+
+
+{\color{red}
+\subsection{Termination Sensitivity}}
+
+\section{Definitions and Meta-theory}
+On top pf RDNI, ConFrm also includes structures and meta-theory that can be used to implement confidential and crash-safe storage systems. This portion consists of two parts, (1) support for abstraction, and (2) the meta-theory that provides relevant theorems to prove confidentiality of implementation from the confidentiality of abstraction. We will first present the infrastructure for defining abstractions and then explain the meta-theory.
+
+\subsection{Abstraction Structures}
+\paragraph{Cores.}
+ConFrm introduces cores as the main way to model the abstract state of the system and the operations that can be performed on it. A core has four components,
+\begin{enumerate}
+    \item the state the system
+    \item the list of possible operations that can be performed,
+    \item the list of possible nondeterminism tokens,
+    \item the execution semantics of each operation.
+\end{enumerate}
+
+An example core for an in-memory cache can be informally described as
+\begin{enumerate}
+    \item the state := a partial function from addresses to data
+    \item the list of possible operations := \texttt{read}, \texttt{write}, \texttt{evict}, 
+    and \texttt{flush}
+    \item the list of possible nondeterminism tokens := continue execution, crash here
+    \item the execution semantics of each operation := ...
+\end{enumerate}.
+
+{\color{red}Explain the example?}
+
+Also, to ensure that tokens capture all the nondeterminism in the semantics, a proof that shows, given a token, execution semantics are deterministic is required.
+  
+\begin{figure}[ht]
+    \centering
+    \begin{verbatim}
+Record Core :=
+  {
+    token : Type;
+    state : Type;
+    operation : Type -> Type;
+    exec: forall T, user -> token -> state ->
+        operation T -> @Result state T -> Prop;
+    
+    exec_deterministic_wrt_token :
+      forall u o s T (p: operation T) ret1 ret2,
+        exec u o s p ret1 ->
+        exec u o s p ret2 ->
+        ret1 = ret2;
+  }.
+    \end{verbatim}
+    \caption{Definition of a core}
+    \label{fig:Core_Definition}
+\end{figure}
+
 \paragraph{Crashes.}
-Since we will be reasoning with crash-safe systems, ConFrm provides support for crashes, reboots and a recovery. 
-We defined two different execution results in ConFrm to support crash semantics of a system: \texttt{Finished}, and \texttt{Crashed}. A \texttt{Finished} result means that program is successfully completed and contains a state and a return value. A \texttt{Crashed} result means that the system crashed in the middle of the execution and contains only a state, which represents the state of the system after the crash happened but before rebooting.
+ConFrm provides support for crash semantics by defining two different execution results: \texttt{Finished}, and \texttt{Crashed}. A \texttt{Finished} result means that program has successfully completed and contains a state and a return value. A \texttt{Crashed} result means that the program crashed during its execution and contains only a state, which represents the state of the system after the crash happened but before rebooting.
 
-Crash semantics of the system are defined by the developer as they are defining their system model. It is developer's responsibility to ensure that defined execution semantics are correctly capturing the system behavior.
+Crash semantics of the system are defined by the developer by defining execution rules that lead to a \texttt{Crashed} result. It is developer's responsibility to ensure that defined execution semantics correctly models the system's both normal and crash behavior.
 
-\paragraph{Reboots.}
-Reboot process can also be a source of nondeterminism in the system. One example of this is an asynchronous disk. When a system crashes and reboots, the disk can be in one of the multiple possible states due to buffered and reordered writes. To capture and quantify this source of nondeterminism, we introduced reboot state functions - or reboot functions for short. A reboot function takes a state after a crash and returns the state that the system will be after a reboot. Just like the crash semantics, it is the developer's responsibility to ensure that their reboot function accurately models the behavior of their system.
 
-We chose to separate the definition of the reboot functions from the definition of the system. Reason for our choice was to not constrain the developer to a single function definition. Ability to reason about different reboot functions was essential to capture reboot behavior of an asynchronous disk.
+\paragraph{Languages.}
+ConFrm also includes the machinery that turns a core to a full language by equipping it with \texttt{Bind} and \texttt{Return} operations. This eliminates the repetitive work that must to be done to define languages. It also allows framework to provide core-agnostic theorems and tactics to be used in proofs.
 
-\paragraph{Recovery.}
-Recovery semantics for systems are provided by ConFrm and added automatically when a language is generated from a core. To distinguish these semantics from the semantics of the execution of a single program, we will refer to recovery semantics as executing-with-recovery. In ConFrm's recovery model, only two outcomes are possible when executing-with-recovery: (1) execution can finish without any crashes, or (2) execution crashes then recovers after certain number of attempts. To represent these two outcomes, ConFrm uses two types of recovery result: \texttt{RFinished} and \texttt{Recovered}. \texttt{RFinished} corresponds to the case (1) and \texttt{Recovered} corresponds to the case (2).
-Since there is no rule for crashing infinitely many times, provided semantics implicitly assume that recovery eventually will succeed. 
+Semantics of the language are derived from the semantics of its core. New  semantics takes a list of tokens (i.e., an oracle) and consumes exactly one at each step. 
 
-Semantics for (1) is straightforward. If the program successfully executes, then it successfully executes-with-recovery.
-Semantics for (2) is more involved. They are inductively defined to capture repeated attempts of recovery until it succeeds. It states that if the original program crashes, and recovery program executes-with-recovery to some result, then original program executes-with-recovery to the state of that result. Since semantics require running many programs with multiple crashes, execution relation takes a list of oracles and a list of reboot functions. An oracle and a reboot function is used every time a crash happens. Therefore, length of those lists implicitly determines how many times the recovery will crash until it succeeds. Formalized semantics can be seen in figure \ref{fig:Recovery_Semantics}
+{\color{red} Some of the Bind/Ret semantics displayed here}
 
+ConFrm also provides some theorems regarding determinism of an execution as well as relationship between oracles and executions like how two executions relate to each other if one's oracle is a prefix of the other's.
+
+\paragraph{Recovery semantics.}
+ConFrm provides pre-defined recovery semantics for the systems and adds this semantics automatically when a language is generated from a core. To distinguish recovery semantics from the semantics of the execution of a single program, we will refer to recovery semantics as executing-with-recovery. In ConFrm's recovery model, only two outcomes are possible when executing-with-recovery: (1) execution can finish without any crashes, or (2) execution crashes then recovers after certain number of attempts. To represent these two outcomes, ConFrm uses two types of recovery result: \texttt{RFinished} and \texttt{Recovered}. \texttt{RFinished} corresponds to case (1) and \texttt{Recovered} corresponds to case (2). Since there is no rule for crashing infinitely many times, the provided semantics implicitly assume that recovery eventually will succeed. 
 
 \begin{figure}[ht]
     \centering
@@ -83,99 +205,15 @@ list (state -> state) -> prog T -> prog unit ->
     \label{fig:Recovery_Semantics}
 \end{figure}
 
-We incorporated executions with recovery into RDNI definition to create a noninterference statement that encompasses the entire crash-reboot-recover cycle. We also changed \texttt{extract\_ret} to return an option type to distinguish between \texttt{RFinished} and \texttt{Recovered} results. This change ensured that both results will have the same result type. Figure \ref{fig:RDNI_recovery} shows the formalization with recovery executions.
-
-\begin{figure}[ht]
-    \centering
-    \begin{verbatim}
-Definition RDNI_with_recovery
-    {T} (u: user) (p: prog T) 
-    (rec: prog unit)
-    (R: state -> state -> Prop) :=
-  forall (l_o: list oracle) 
-  (l_rf: list (state -> state))
-  (s1 s2: state) (res1: Result T),
-    exec_with_recovery u l_o s1 l_rf p rec res1 ->
-    R s1 s2 ->
-    exists res2,
-        exec_with_recovery u l_o s2 l_rf p rec res2 /\
-        R (extract_state res1) (extract_state res2) /\
-        extract_ret res1 = extract_ret res2.
-    \end{verbatim}
-    \caption{RDNI with recovery executions.}
-    \label{fig:RDNI_recovery}
-\end{figure}
-
-We made two more addition to RDNI to unify \texttt{state\_noninterference} and \texttt{ret\_noninterference} into a single definition. First, we made return value equality conditioned on a predicate for the user being true. This way, we can require return value equivalence to hold only for the users that the states are equivalent for. Second, we made it so it is defined over two programs. This change was needed because ConFrm programs contain their input arguments and we needed to be able to reason about a function executing with different input arguments. With these changes, we reach our final definition for RDNI, which is shown in Figure \ref{fig:RDNI_final}.
-
-\begin{figure}[ht]
-    \centering
-    \begin{verbatim}
-    Definition RDNI_with_recovery
-        {T} (u: user) (p1 p2: prog T) 
-        (rec: prog unit)
-       (R: state -> state -> Prop) 
-       (cond: user -> Prop):=
-      forall (l_o: list oracle) (l_rf: list (state -> state))
-      (s1 s2: state) (res1: Result T),
-        recovery_exec u l_o s1 l_rf p1 rec res1 ->
-        R s1 s2 ->
-        exists res2,
-            recovery_exec u l_o s2 l_rf p2 rec res2 /\
-            R (extract_state res1) (extract_state res2) /\
-            (cond u -> extract_ret res1 = extract_ret res2).
-    \end{verbatim}
-    \caption{Final definition of RDNI}
-    \label{fig:RDNI_final}
-\end{figure}
-
-{\color{red}
-\subsection{Termination Sensitivity}}
-
-% This is ConFrm so rename it
-\section{Proof Approach}
-Our proof approach consists of two parts. First part is the support for abstraction. Second part is the meta-theory that provides relevant theorems to prove confidentiality of implementation from the confidentiality of abstraction. We will first present the infrastructure for defining abstractions then explain the meta-theory.
-
-\subsection{Cores, Languages, and Refinements}
-\paragraph{Cores.}
-ConFrm introduces cores as the main way to model the system and the languages. A core has four components. First one is the state that will be used in operational semantics. Second one is list of possible operations (opcodes). Third one is list of possible nondeterminism tokens. Nondeterminism tokens are how we implement the concept of oracles from RDNI. Fourth one is the execution semantics of each operation.
-
-Also, to ensure that tokens capture all the nondeterminism in the semantics, a proof that shows, given a token, execution semantics are deterministic is required.
-
-\begin{figure}[ht]
-    \centering
-    \begin{verbatim}
-Record Core :=
-  {
-    token : Type;
-    state : Type;
-    operation : Type -> Type;
-    exec: forall T, user -> token -> state ->
-        operation T -> @Result state T -> Prop;
-    
-    exec_deterministic_wrt_token :
-      forall u o s T (p: operation T) ret1 ret2,
-        exec u o s p ret1 ->
-        exec u o s p ret2 ->
-        ret1 = ret2;
-  }.
-    \end{verbatim}
-    \caption{Definition of a core}
-    \label{fig:Core_Definition}
-\end{figure}
-
-\paragraph{Languages.}
-ConFrm also includes the machinery that turns a core to a full language by equipping it with a computation monad. This prevents the repetitive work that needs to be done to define languages. It also allows framework to provide core-agnostic theorems and tactics to be used in proofs.
-
-Semantics of the language are derived from the semantics of its core. New  semantics takes a list of tokens (i.e. an oracle) and consumes exactly one at each step. Turning a core into a language also gives it its recovery semantics.
-
-ConFrm also provides some theorems regarding determinism of an execution as well as relationship between oracles and executions like how two executions relate to each other if one's oracle is a prefix of the other's.
+Figure \ref{fig:Recovery_Semantics} displays the formal definition.
+Semantics for (1) is stated in \texttt{ExecFinished} rule. It is quite straightforward. If the program successfully executes, then it successfully executes-with-recovery.
+Semantics for (2) is stated in \texttt{ExecRecovered} rule and more involved. It is inductively defined to capture repeated attempts of recovery until it succeeds. The rule states that, if the original program crashes, and recovery program executes-with-recovery to some result, then original program executes-with-recovery to the state of that result. Execution uses a new oracle and a new reboot function every time a crash-reboot-recovery cycle happens. Therefore, lengths of those lists implicitly determine how many times the recovery will crash until it succeeds.
 
 \paragraph{Refinements.}
 ConFrm's main mechanism for relating abstractions and implementations is refinements. 
-ConFrm defines a refinement as an object between an implementation language and a core abstracting it. We had to extend the standard refinement definition to accommodate both crashes and oracles.
+ConFrm defines a refinement as an object between an implementation language and a core abstracting it. We extend the standard refinement definition to accommodate both crashes and oracles.
 
-A refinement has four components that corresponds the four components of a core, and a theorem states that a successful execution preserves the state refinement relation. These components are
+As shown in figure \label{fig:Core_Refinement_Definition}, a refinement has four components that corresponds the four components of a core, and a theorem states that a successful execution preserves the state refinement relation. The four components are
 \begin{itemize}
     \item a \texttt{compile} function, that turns an  abstract operation to its implementation program,
     \item a \texttt{refines} relation that relates an abstract state to an implementation state,
@@ -212,55 +250,93 @@ Record CoreRefinement {O_imp} (L_imp: Language O_imp) (O_abs: Core) :=
 
 Both \texttt{compile} and \texttt{refines} are part of the standard definition. However \texttt{refines\_reboot} and \texttt{token\_refines} relations require more explanation.
 
-We had to separate \texttt{refines\_reboot} from \texttt{refines} because, in general, \texttt{refines} relation was too strong to hold for after-reboot states but we also needed a relation between them to ensure that recovery restores the original \texttt{refines} relation.
+We separate \texttt{refines\_reboot} from \texttt{refines} because, in general, \texttt{refines} relation is too strong to hold for after-reboot states but we also needed a relation between them to ensure that recovery restores the original \texttt{refines} relation. {\color{red} Add example here. Cache not having latest value or smth.}
 
-\texttt{token\_refines} relation is more complicated. On top of the oracle and the token it relates, it takes the following as parameters
+The \texttt{token\_refines} relation is more complicated. On top of the oracle and the token it relates, it takes the following parameters
 \begin{itemize}
     \item a user,
     \item an implementation state,
     \item an abstract operation,
     \item and an implementation reboot function.
 \end{itemize}
-All these parameters were necessary to capture intricate relationship between abstract tokens and implementations' crash and recovery behavior. We can demonstrate the roles they play by examining the following example.
+All these parameters are necessary to capture intricate relationship between abstract tokens and implementations' crash and recovery behavior. We can demonstrate the roles they play by examining the following example.
 
 Assume that we are abstracting an implementation of a checksum-based log on an asynchronous disk with a \texttt{write} function.
-A crash during a write to a checksum-based log may leave in such a state that whether the \texttt{write} succeeded or not would depends on which blocks made it to the disk before crash happened (which is determined by the after-reboot state of the implementation). In other words, success of a write after crash depends on (1) state of the disk just after the crash, and (2) state of the disk after reboot. To determine (1), we need to know the user, the starting state, and data being written - which is contained in the operation. To determine (2), we need to know the reboot function. Therefore, capturing the behavior of the write in this particular case requires all the parameters listed above. Other operations may require some or all of those parameters as well.
+A crash during a write to a checksum-based log may leave the log in such a state that whether the \texttt{write} succeeded or not would depends on which blocks made it to the disk before crash happened (which is determined by the after-reboot state of the implementation). In other words, success of a write after crash depends on (1) state of the disk just after the crash, and (2) state of the disk after reboot. To determine (1), we need to know the user, the starting state, and data being written, which is in the operation. To determine (2), we need to know the reboot function. Therefore, capturing the behavior of the write in this particular case requires all the parameters listed above. Other operations may require some or all of those parameters as well.
 
 {\color{red} Maybe a figure that demonstrates above paragraph goes here.}
 
-Just like languages, ConFrm can automatically generate a refinement between two languages given a core refinement between an implementation language and an abstraction core. A refinement for a language differs from a refinement in three places. First, \texttt{compile} function transforms programs from the abstraction language to implementation language. Second, \texttt{token\_refines} turns into \texttt{oracle\_refines}, which relates an abstract oracle and an implementation oracle.
+Similar to generating a language from a core, ConFrm can automatically generate a refinement between two languages given a core refinement between an implementation language and an abstraction core. A refinement for a language differs from a refinement for a core in three places. First, \texttt{compile} function transforms programs from the abstraction language to implementation language. Second, \texttt{token\_refines} turns into \texttt{oracle\_refines}, which relates an abstract oracle and an implementation oracle.
 Third, a finished execution of any compiled program should preserve the refinement. ConFrm also provides \texttt{recovery\_oracles\_refine} relation, which relates list of implementation oracles to list of abstraction oracles by \texttt{oracle\_refines} inductively.
+
+{\color{red} Refinement picture here.}
 
 \paragraph{Horizontal Compositions.}
 To enable modular implementations, ConFrm provides automatic derivation of a new, composite core from two given cores via horizontal composition. State of the composite core is a pair that contains the state of each the component cores. This capability allows developers to develop the system in small, self contained parts that can be combined at will when desired without much overhead. A language derived from a composite ConFrm contains support for "lifting" the programs written in a language of the one of the component cores to the language of the composite core. Similarly, it allows automatic derivation of a refinement between the two composite languages if a component of first language is a refinement of a component of the second language.
 
-\subsection{Deriving confidentiality of an implementation}
-At the heart of ConFrm lies the theorem which derives the confidentiality of a compiled program from the confidentiality of its abstraction. Theorem reveals the conditions that needs to hold for preserving RDNI through refinement. We identified two such conditions. First condition is about an abstraction capturing all necessary behavior of an implementation. Second one is about independence of abstract nondeterminism from confidential data. More precisely, these two conditions are
+
+\subsection{Meta-theory}
+At the heart of ConFrm lies the theorem \ref{fig:RDNI_Transfer_Definition}, which derives the confidentiality of a compiled program from the confidentiality of its abstraction. The theorem reveals sufficient conditions for preserving RDNI through refinement. The two conditions are:
 
 \begin{enumerate}
     \item there should be a simulation between implementation and abstraction with respect to refinement relations, and
-    \item if a list of implementation oracles refine a list of abstract oracles from a state with the first program, then it should refine the same oracle from any state that is related to the first state with the second program.
+    \item if a list of implementation oracles refine a list of abstract oracles from a state with the first program, then it should refine the same oracle from any state that is equivalent to the first state with the second program.
 \end{enumerate}
 
 First condition ensures that there is no execution of a compiled program that is not captured by an execution of an abstract program. This is necessary for a property of any abstract execution to imply a property of any implementation execution. If there was an implementation execution that does not correspond to an abstract execution, then it would not be possible to reason about such execution through an abstract execution.
 
-Second condition can be interpreted as the necessity that abstraction does not inject dependency to the confidential data into abstract oracles. Abstractions modelling some deterministic behaviors of an implementation as nondeterminism is a common pattern. This property makes sure that developer does not abstract a behavior that depends on the confidential data in such a way. If such action would be permitted, then two implementation executions from related states with the same implementation oracles could correspond to two abstraction executions with different oracles.
+Second condition can be interpreted as the necessity that abstraction does not inject dependency to the confidential data into abstract oracles. Abstractions modelling some deterministic behaviors of an implementation as nondeterminism is a common pattern. For example, an abstraction of a resource allocator may model the allocation function to return an unused resource nondeterministacally, even though the implementation's behavior is actually deterministic. (e.g. returning the first available one). 
 
-In such a case, the noninterference of the abstraction with the same oracles wouldn't be strong enough to establish the same fact in implementation, due to the fact that noninterference of the abstraction does not state anything about executions with different oracles.
+This property makes sure that developer does not abstract a behavior that depends on the confidential data in such a way. If such action would be permitted, then two implementation executions from equivalent states with the same implementation oracles could correspond to two abstraction executions with different oracles. In such a case, the noninterference of the abstraction with the same oracles wouldn't be strong enough to establish the same fact in implementation, due to the fact that noninterference of the abstraction does not state anything about executions with different oracles. Formalization of this condition can be seen in figure \ref{fig:ORS_Definition}.
 
-\paragraph{Simulations.}
-First condition states that a simulation must exist between the abstraction and the implementation. Since we introduced oracles and crash-and-recovery into execution relations, we had to modify the standard simulation definition to accommodate those changes. 
-
-First change is that, our modified simulation definition has three simulation relations, one for the starting states, one for the end states and one for the oracles. We had to separate the relation that relates the starting and end state to be able to reason about recovery where the relation that holds at the beginning and at the end are different. 
-
-In our case, they were \texttt{refines\_reboot} and \texttt{refines} relations, respectively. However we also defined a two relation variant to use in transfer theorem's definition, where start and end relations are both \texttt{refines} relation.
-
-Second change is that it is defined over an entire execution-with-recovery. This allows simulation relation to be broken temporarily after a crash, as long as it is restored by the recovery process. This change was necessary because crashes may expose states that will never appear during normal execution. This way, refinement relation can only consider the states that appear during normal execution. How to represent crash states are entirely left to the developer. Formal definition of a simulation can be found in figure \ref{fig:Simulation_Definition}. In implementation, we separated existence of a list of abstract oracles and existence of an abstract execution separate to shorten the proof scripts for individual theorems.   
+{\color{red} Give example for above paragraph.}
 
 \begin{figure}[ht]
-    \centering
-    \begin{verbatim}
-Definition SimulationForProgram
+\centering
+\begin{verbatim}
+Definition oracle_refines_same_from_equivalent
+    (u: user) {T} (p1_abs p2_abs: L_abs.(prog) T)
+    rec_abs l_get_reboot_state_imp
+    (equivalent_states_abs: L_abs.(state) -> L_abs.(state) -> Prop) :=
+    
+forall l_o_imp l_o_abs l_o_abs' s1_imp s2_imp,
+
+    refines_equivalent equivalent_states_abs s1_imp s2_imp ->
+
+    recovery_oracles_refine 
+        u s1_imp p1_abs rec_abs 
+        l_get_reboot_state_imp 
+        l_o_imp l_o_abs ->
+
+    recovery_oracles_refine 
+        u s2_imp p2_abs rec_abs 
+        l_get_reboot_state_imp 
+        l_o_imp l_o_abs' ->
+
+    recovery_oracles_refine 
+        u s2_imp p2_abs rec_abs 
+        l_get_reboot_state_imp 
+        l_o_imp l_o_abs.
+\end{verbatim}
+\caption{Formalization of oracle refinement being independent of confidential data}
+\label{fig:ORS_Definition}
+\end{figure}
+
+\paragraph{Simulations.}
+First condition states that a simulation must exist between the abstraction and the implementation. Since we introduced oracles and crash-and-recovery into execution relations, we modify the standard simulation definition to accommodate those changes. 
+
+As shown in figure \ref{fig:Simulation_Definition}, the first change is that, modified simulation definition has three simulation relations, one for the starting states, one for the end states and one for the oracles. We separate the relation that relates the starting and end state to be able to reason about recovery where the relation that holds at the beginning and at the end are different. 
+
+In our case, they were \texttt{refines\_reboot} and \texttt{refines} relations, respectively. However, we also define a two relation variant to use in definition  \label{fig:RDNI_Transfer_Definition}, where start and end relations are both \texttt{refines} relation.
+
+Second change is that a simulation is defined over an entire execution-with-recovery. This allows simulation relation to be broken temporarily after a crash, as long as it is restored by the recovery process. This change is necessary because crashes may expose states that will never appear during a normal execution. This way, refinement relation can only consider the states that appear during normal execution. How to represent crash states is entirely left to the developer. 
+
+Formal definition of a simulation can be found in figure \ref{fig:Simulation_Definition}. In implementation, we separated existence of a list of abstract oracles and existence of an abstract execution separate to shorten the proof scripts for individual theorems.   
+
+\begin{figure}[ht]
+\centering
+\begin{verbatim}
+Definition Simulation
    u T (p_abs: L_abs.(prog) T) (rec_abs : L_abs.(prog) unit)
    l_get_reboot_state_imp
    l_get_reboot_state_abs
@@ -277,17 +353,15 @@ Definition SimulationForProgram
         R_end (extract_state_r s_imp') (extract_state_r s_abs') /\
         extract_ret_r s_imp' = extract_ret_r s_abs').
 \end{verbatim}
-    \caption{Our simulation relation with oracles and execution-with-recovery}
-    \label{fig:Simulation_Definition}
+\caption{ConFrm's simulation relation with oracles and execution-with-recovery}
+\label{fig:Simulation_Definition}
 \end{figure}
 
 
-
-\iffalse 
 \begin{figure}[ht]
-    \centering
-    \begin{verbatim}
-Lemma RDNI_Weak_transfer:
+\centering
+\begin{verbatim}
+Lemma RDNI_transfer:
   forall O_imp O_abs (L_imp: Language O_imp) (L_abs: Language O_abs) 
     (R: Refinement L_imp L_abs)
     u T (p1_abs p2_abs: L_abs.(prog) T) rec_abs
@@ -295,39 +369,39 @@ Lemma RDNI_Weak_transfer:
     l_get_reboot_state_abs
     equivalent_states_abs cond,
 
-    RDNI_Weak
+    RDNI
       u p1_abs p2_abs rec_abs
       equivalent_states_abs
       cond l_get_reboot_state_abs ->
     
-    SimulationForProgram R 
+    Simulation R 
       u p1_abs rec_abs 
       l_get_reboot_state_imp
       l_get_reboot_state_abs ->
 
-    SimulationForProgram R 
+    Simulation R 
       u p2_abs rec_abs 
       l_get_reboot_state_imp
       l_get_reboot_state_abs ->
     
-    oracle_refines_same_from_related R 
+    oracle_refines_same_from_equivalent R 
       u p1_abs p2_abs rec_abs 
       l_get_reboot_state_imp 
       equivalent_states_abs ->
     
-    RDNI_Weak
+    RDNI
       u (R.(compile) p1_abs)
       (R.(compile) p2_abs)
       (R.(compile) rec_abs)
-      (refines_related R equivalent_states_abs)
+      (refines_equivalent R equivalent_states_abs)
       cond l_get_reboot_state_imp.
-Proof.
 \end{verbatim}
-    \caption{RDNI transfer theorem}
-    \label{fig:RDNI_Transfer_Definition}
+\caption{RDNI transfer theorem}
+\label{fig:RDNI_Transfer_Definition}
 \end{figure}
 
-
+%%%% SOme conclusion here
+\iffalse
 \section{Property Transfers}
 
 \subsection{RDNI transfer}
@@ -337,7 +411,7 @@ Proof.
     
 -- abstract oracles exist wrt (AOE)
 
--- oracle refines same from related (ORS)
+-- oracle refines same from equivalent (ORS)
 
 -- exec compiled preserves validity (Trivial in our case because all of our top states are valid)
 
