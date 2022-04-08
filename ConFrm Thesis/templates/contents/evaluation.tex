@@ -1,11 +1,13 @@
 \chapter{Evaluation}
+\label{chapter:Evaluation}
+
 This section experimentally answers the following questions:
 
 \begin{itemize}
 
-\item
-  Is our confidentiality specifications trustworthy?  That is, are noninterference theorems sufficient for applications to prove confidentiality of their own data?
-  What assumptions do these proofs rely on?
+%\item
+%  Is our confidentiality specifications trustworthy?  That is, are noninterference theorems sufficient for applications to prove confidentiality of their own data?
+%  What assumptions do these proofs rely on?
 
 \item
   How much effort was required to develop the frameworks, and to use frameworks to prove the security of the systems?
@@ -15,7 +17,7 @@ This section experimentally answers the following questions:
   %How much runtime overhead does DiskSec's approach impose in SFSCQ?
 \end{itemize}
 
-\subsection{Specification trustworthiness}
+\section{Specification trustworthiness}
 
 To evaluate the trustworthiness of SFSCQ's specifications, we performed several
 analyses.
@@ -56,26 +58,25 @@ mistake in our study.  Nonetheless, return noninterference is important
 for completeness of SFSCQ's theorems.  Overall, the results demonstrate
 that SFSCQ's theorems preclude the possibility of all studied bugs.
 
-\begin{figure}[ht]
+\begin{figure}[H]
   \centering
   \small
-  \begin{tabular}{@{}p{2.4in}p{0.5in}@{}}
-    %\toprule
-    %\multirow{2}{*}{\textbf{Description}} & \textbf{Theorem} \\ & \textbf{violated} \\
-    %\midrule
-    anyone can change POSIX ACLs~\cite{CVE-2010-2071, CVE-2010-1641, CVE-2016-1237} & state NI \\
-    reiserfs permissions can be changed \\ \quad by writing to hidden file~\cite{CVE-2010-1146} & state NI \\
-    truncated data can be accessed~\cite{CVE-2015-8374}
-                         & state NI \\
-    crash can expose deleted data in ext4~\cite{CVE-2017-7495} & state NI \\
-    crash can expose data in ext4~\cite{git:469017} & state NI \\
-    can overwrite append-only file in ext4, btrfs~\cite{CVE-2010-2066, CVE-2010-2537} & integrity \\
-    can overwrite arbitrary files in ext4~\cite{CVE-2009-4131} & integrity \\
+  \begin{tabular}{| l | c | c |}
+    \hline
+    \textbf{Description} & \textbf{Theorem}  & \textbf{violated}\\
+    \hline
+    anyone can change POSIX ACLs~\cite{CVE-2010-2071, CVE-2010-1641, CVE-2016-1237} & state NI & \\
+    reiserfs permissions can be changed by writing to hidden file~\cite{CVE-2010-1146} & state NI & \\
+    truncated data can be accessed~\cite{CVE-2015-8374} & state NI  &\\
+    crash can expose deleted data in ext4~\cite{CVE-2017-7495} & state NI  &\\
+    crash can expose data in ext4~\cite{git:469017} & state NI  &\\
+    can overwrite append-only file in ext4, btrfs~\cite{CVE-2010-2066, CVE-2010-2537} & integrity  &\\
+    can overwrite arbitrary files in ext4~\cite{CVE-2009-4131} & integrity & \\
     % SGID directories can become writeable in overlayfs~\cite{CVE-2016-1575} &
     % write confidentiality, but \emph{N/A}\footnote{any SGID, writeable
     % directory violates write confidentiality, but no support or model of
     % SUID/SGID} \\
-    %\bottomrule
+    \hline
   \end{tabular}
   \caption{Security bugs in Linux file systems and which SFSCQ theorem precludes them.}
   \label{fig:bugs-addressed}
@@ -96,7 +97,7 @@ all specified non-determinism (e.g., crashing at any point), and this
 non-determinism must be independent of confidential data.  All proofs in the frameworks and the systems are checked by Coq proof assistant.
 
 
-\subsection{Effort}
+\section{Effort}
 
 % these numbers were computed by the scripts in
 % osdi18-security/effort-estimate/; see the README.md there for details.
@@ -113,18 +114,18 @@ Porting DFSCQ to the first version of DiskSec (without support for changing
 permissions) took one author about 3 months, and another 2 months to
 mostly finish support for permission changes.
 
-\begin{figure}[ht]
+\begin{figure}[H]
   \centering
   \begin{tabular}{lr}
-    %\toprule
+    \hline
     \textbf{Component} & \textbf{Changes to DFSCQ} \\
-    %\midrule
+    \hline
     DiskSec & 9,283 \\
     DFSCQ proof fixes & $-10,471$, $+26,433$ \\
     & \quad (36,094 total) \\
     SFSCQ impl.\ and proofs & 1,837 \\
     Verified \texttt{cp} application & 407 \\
-    %\bottomrule
+    \hline
   \end{tabular}
   \caption{Lines of code change required to implement DiskSec and apply it to build
     SFSCQ. Counts measure the diff between DFSCQ and SFSCQ.}
@@ -132,8 +133,11 @@ mostly finish support for permission changes.
 \end{figure}
 
 
-\subsection{Performance}
+\section{Performance}
+We conducted two experiments to measure the performance of our file systems: (1) performance comparison between SFSCQ and DFSCQ, (2) performance comparison between ConFs and FSCQ. We chose reference file systems to be as similar as possible to our file systems. 
+DFSCQ was a natural one for the SFSCQ, since SFSCQ is a modified version of the DFSCQ. We used FSCQ for ConFs because it is more similar to ConFs than SFSCQ or DFSCQ.
 
+\paragraph{SFSCQ Performance}
 We expect that the performance overhead of DiskSec is nearly zero, because
 most of its code changes (such as handles, sealing, and unsealing) are
 eliminated in the process of generating executable code.  (All of the
@@ -159,19 +163,62 @@ of a two-disk-barrier write-ahead log incurs some performance overhead
 for smallfile; largefile performance is not impacted because its file
 data writes bypass the log.
 
-\begin{figure}[ht]
+\begin{figure}[H]
   \centering
   \begin{tabular}{lrr}
-    %\toprule
+    \hline
     \textbf{Filesystem} & \textbf{smallfile} & \textbf{largefile} \\
-    %\midrule
+    \hline
     DFSCQ & 446 files/s & 108 MB/s \\
     DFSCQ (no checksums) & 295 files/s & 109 MB/s \\
     SFSCQ & 299 files/s & 100 MB/s \\
-    %\bottomrule
+    \hline
   \end{tabular}
   \caption{Benchmarks showing performance of SFSCQ compared to DFSCQ and a
     version of DFSCQ with a comparable logging implementation.  Numbers
     shown are the median of 30 runs.}
   \label{fig:perf}
 \end{figure}
+
+
+\paragraph{ConFs Performance}
+To measure the performance of ConFs, we used four microbenchmarks (LFS smallfile, largefile, rename, and createdelete
+benchmarks~\cite{rosenblum:lfs} as modified by DFSCQ~\cite{chen:dfscq}). We compared ConFs against FSCQ and SFSCQ where we ran each benchmark 10 times and take their average. In our experiments, ConFs achieved 60\% of FSCQ's performance in smallfile, 82\% in rename, and 52\% in createdelete benchmarks. In largefile benchmark, ConFs achieved 83\% of FSCQ's performance in makefile test and 284\% in writefile test. Figure \ref{fig:Performance_Comparison} and \ref{fig:Performance_Comparison_Largfile} demonstrate the results. We include performance numbers for SFSCQ for the sake of completeness, although it performs an order of magnitude better due to being more optimized for performance.
+
+\begin{figure}[H]
+         \centering
+          \includegraphics[scale=0.5]{templates/figures/Performance Comparison.png}
+    \caption{Performance comparison for smallfile, rename and createdelete benchmarks.}
+    \label{fig:Performance_Comparison}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.5]{templates/figures/Largefile Benchmark.png}
+    \caption{Performance comparison for the largefile benchmark.}
+    \label{fig:Performance_Comparison_Largfile}
+\end{figure}
+
+Since ConFs isn't build with performance in mind, it lacks many optimizations that can increase its performance. Most impactful of those is a buffer cache to keep recent disk reads and writes in the memory for faster access. Absence of the buffer cache resulted in many disk read operations (e.g., allocator bitmaps, log header, etc.) to be executed per system call. This introduced a significant performance overhead to the system. 
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.5]{templates/figures/Per File Operations.png}
+    \caption{Per-file disk operations in smallfile benchmark.}
+    \label{fig:Smallfile_Per_File_benchmark}
+\end{figure}
+
+We can see that ConFs' slowdown comes from disk reads in per-file disk operations breakdown of smallfile benchmark, displayed in figure  \ref{fig:Smallfile_Per_File_benchmark}. Even though ConFs makes less disk writes and syncs than FSCQ, 9 extra reads lead to a worse performance. Similarly, ConFs performs significantly better than FSCQ in writefile test because test is dominated by write operations.\\
+
+\noindent
+\textbf{ConFrm effort numbers:}\\
+Supplementary Libs (listutils, mem, totalmem): 7647 cloc\\
+ConFrm : 3407 cloc\\
+\noindent
+\textbf{ConFs effort numbers:}\\
+Implementation + Functional Correctness : 16852 cloc\\
+Refinements: 4594 cloc\\
+Top Level NI : 1950 cloc\\
+Simulations + Transfers: 18887 cloc\\
+\noindent
+\textbf{Grand Total:} 53405 cloc

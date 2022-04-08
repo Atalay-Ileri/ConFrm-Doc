@@ -162,7 +162,7 @@ Get\_all\_block\_numbers  takes an inode number and returns the block number lis
 
 Get\_owner  takes an inode number and returns the owner of the inode with the given number.
 
-\subsection{Files asnd File Disk}
+\subsection{Files and File Disk}
 \subsubsection{Files}
 File component implements file system API. It implements access control and transactionality. Access control and transactionality is handled by a higher order function auth\_then\_exec. It authenticates the user then calls the requested function if user is permitted to do so. If called function successfully completes, then auth\_then\_exec commits the transaction and returns success. Otherwise, it aborts the transaction and returns failure.
 

@@ -1,15 +1,16 @@
 \chapter{ConFs File System}
+\label{chapter:ConFs}
 
 \section{Overview}
 To test the capabilities of ConFrm, we implemented ConFs, a confidential, crash-safe file system with a checksum based and encrypted log. 
 ConFs is a crash-safe file system implemented in Coq and its confidentiality is proven using ConFrm framework. It has a checksum based and encrypted log, a log cache for faster log reads, a transaction system for atomic operations, two block allocators for managing data and inode blocks, and an authentication system for access control. All these components are implemented on top of each other and intermediate abstraction layers are used to provide a cleaner interface for the components above.
 
 \section{Implementation}
-We implemented ConFs as a stack of levels, each level consisting of a ConFrm language and the programs written in that language. This approach allows us to simplify the operational semantics as we implement higher level functionality. Each language is designed to model how underlying implementation and hardware behaves. Using ConFrm's language structure allow us to use the machinery and the meta-theory provided. This allowed us to encapsulate different parts of the system to only the relevant state and operations, reducing the proof effort significantly.
+We implemented ConFs as a stack of levels, each level consisting of a ConFrm layer and the programs written in that layer. This approach allows us to simplify the operational semantics as we implement higher level functionality. Each layer is designed to model how underlying implementation and hardware behaves. Using ConFrm's layer structure allow us to use the machinery and the meta-theory provided. This allowed us to encapsulate different parts of the system to only the relevant state and operations, reducing the proof effort significantly.
 
-In the case of a language abstracting an implementation from the level below, a simulation proof is employed to ensure that language's semantics captures the behavior of the implementation. We will explain each level, starting from the bottom, in the following part. Figure \ref{fig:ConFs_Layers} shows how different parts of ConFs is organized.
+In the case of a layer abstracting an implementation from the level below, a simulation proof is employed to ensure that layer's semantics captures the behavior of the implementation. We will explain each level, starting from the bottom, in the following part. Figure \ref{fig:ConFs_Layers} shows how different parts of ConFs is organized.
 
-\begin{figure}[h]
+\begin{figure}[H]
     \centering
     \includegraphics[scale=0.5]{templates/figures/ConFs Layers.png}
     \caption{Structure of ConFs}
@@ -17,11 +18,11 @@ In the case of a language abstracting an implementation from the level below, a 
 \end{figure}
 
 \subsection{ATCD Level}
-ATCD level is the lowest level of ConFs and it contains the model of the raw disk, a crypto engine, and in-memory data structure operations. Its language and state consists of five parts, implemented as ConFrm cores. These parts are disk core, crypto core, cache core, transaction list core, and the authentication core. 
+ATCD level is the lowest level of ConFs and its layer contains the model of the raw disk, a crypto engine, and in-memory data structure operations. The layer is implemented as five separate cores. These parts are disk core, crypto core, cache core, transaction list core, and the authentication core. 
 
 Implementations in this level only uses operations from disk, crypto and cache cores; leaving transaction list and authentication cores unused. Including these cores was necessary because each file system operation will compile into a program in ATCD level and those programs will use operations from those cores. 
 
-Thanks to the ConFrm's horizontal composition mechanism, implementations and proofs in this level uses only the relevant parts of the language. This reduced unnecessary proof effort and implementation complexity significantly while retaining the ability to use implementations and theorems about them in the context of full level language.
+Thanks to the ConFrm's horizontal composition mechanism, implementations and proofs in this level uses only the relevant parts of the layer. This reduced unnecessary proof effort and implementation complexity significantly while retaining the ability to use implementations and theorems about them in the context of full level layer.
 
 We implemented write-ahead log and log cache in this level. This level handled complicated crash and recovery semantics and presented a simple, crash-safe disk, via its representation invariant, for above levels to use. We will talk about these implementations in the following sections.
 
@@ -33,7 +34,7 @@ The level above ATCD is called ATC level and it contains a new core named logged
 
 Logged disk core contains an operation for each function log cache API provides. Similarly, the state of the logged disk is the crash resistant disk exposed by log cache implementation. This simplified crash semantics of the layer significantly by moving determination of possible crash states to the non-determinism tokens. This also turned its reboot and recovery semantics to a 'noop', that virtually removed the need for reasoning about the recovery process. 
 
-\begin{figure}[ht]
+\begin{figure}[H]
     \centering
 \begin{verbatim}
 | ExecRecover : 
@@ -67,7 +68,7 @@ Similar to the ATC level, AD level also abstracts a part of the ATC layer. On AD
 
 Transaction being full is handled by a nondeterminism token. This abstraction allows us to remove reasoning about the precise transaction size, and turns it into a possibility that can happen in any write.
 
-\begin{figure}[ht]
+\begin{figure}[H]
     \centering
 \begin{verbatim}
 | ExecWrite :
@@ -86,7 +87,7 @@ Transaction being full is handled by a nondeterminism token. This abstraction al
 
 Similar to the logged disk, if a crash happened before or after a commit is determined by a nondeterminism token. One thing to note is that rolling back to the disk without active transaction is done by the reboot function of the level.
 
-\begin{figure}[ht]
+\begin{figure}[H]
     \centering
 \begin{verbatim}
 | ExecCrashBefore :
@@ -116,7 +117,7 @@ File component handles authentication as well as the actual manipulation of the 
 {\color{red} Table showing the state and operations of the level here}.
 
 \subsection{ConFs level}
-ConFs level is the topmost level that provides a language which every file system function is an operation and a state that is a mapping from inode numbers to file owner and contents. This level effectively hides all the complexities of the implementation and allows users to perceive and reason about the system similar to their intuitive understanding of it.
+ConFs level is the topmost level that provides a layer which every file system function is an operation and a state that is a mapping from inode numbers to file owner and contents. This level effectively hides all the complexities of the implementation and allows users to perceive and reason about the system similar to their intuitive understanding of it.
 
 Inode number that is being returned upon file creation, availability of free inodes, transaction fullness, and crashes are all dictated with nondeterminism tokens.
 
@@ -133,7 +134,7 @@ We made some changes to the equivalence relation definition to unify ret\_nonint
 We modified our equivalence relation to take an optional inode number to exclude the contents of the file that its owner is being changed.
 Since equivalence relation for ChangeOwner excludes contents of the file that is being operated on, it only provides half of the required security - i.e. it excludes leakage from the changed file to the outside. The fact that no information leaks from outside to the file is covered by its functional correctness which states that file's contents stay unchanged after the operation.
 
-\begin{figure}[ht]
+\begin{figure}[H]
     \centering
 \begin{verbatim}
 Definition same_for_user_except (u: user) 
@@ -160,7 +161,7 @@ Definition same_for_user_except (u: user)
 \subsection{AuthenticatedDisk and TransactionCache Level Security}
 ConFrm provides a function that converts an equivalence over abstract states to an equivalence over implementation states given that a refinement between two exists. Informally, function states that two implementation states are equivalent if there exists two equivalent abstract states that are refined by the implementation states.
 
-\begin{figure}[ht]
+\begin{figure}[H]
     \centering
 \begin{verbatim}
 Definition refines_related 
@@ -186,7 +187,7 @@ Main reason for this is that, oracles in ConFrm implicitly dictates number of ex
 
 Consider the following read function:
 
-\begin{figure}[ht]
+\begin{figure}[H]
     \centering
 \begin{verbatim}
 Definition read a :=
